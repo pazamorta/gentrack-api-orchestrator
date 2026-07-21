@@ -549,15 +549,30 @@ async function createNewMock(routeId) {
 
 function viewMock(id) {
   const mock = mocks.find((m) => m.id === id);
-  if (mock) openModalReadOnly(`View Mock: ${mock.name}`, JSON.stringify(mock, null, 2));
+  if (!mock) return;
+  try {
+    const content = JSON.stringify(mock, null, 2);
+    openModalReadOnly(`View Mock: ${mock.name}`, content);
+  } catch {
+    const safeMock = { ...mock, response: { ...mock.response, body: '[Binary or non-JSON content]' } };
+    openModalReadOnly(`View Mock: ${mock.name}`, JSON.stringify(safeMock, null, 2));
+  }
 }
 
 function editMock(id) {
   const mock = mocks.find((m) => m.id === id);
   if (!mock) return;
+  let content;
+  try {
+    content = JSON.stringify(mock, null, 2);
+    JSON.parse(content);
+  } catch {
+    const safeMock = { ...mock, response: { ...mock.response, body: '[Binary or non-JSON content - replace with valid JSON]' } };
+    content = JSON.stringify(safeMock, null, 2);
+  }
   openModal(
     `Edit Mock: ${mock.name}`,
-    JSON.stringify(mock, null, 2),
+    content,
     async (json) => {
       const updated = JSON.parse(json);
       await fetch(`${API_BASE}/mocks/${updated.id}`, {

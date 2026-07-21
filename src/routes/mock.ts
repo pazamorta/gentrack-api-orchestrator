@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as db from '../db';
+import { logExecution } from '../db';
 
 const router = Router();
 
@@ -10,7 +11,8 @@ const router = Router();
  * Frontend apps call /mock/* instead of /api/* to get mocked responses.
  */
 router.all('*', (req: Request, res: Response) => {
-  const mock = db.getActiveMockForRoute(req.method, req.path);
+  const startTime = Date.now();
+  const mock = findBestMock(req.method, req.path);
 
   if (!mock) {
     res.status(404).json({
@@ -28,7 +30,66 @@ router.all('*', (req: Request, res: Response) => {
     }
   }
 
+  const duration = Date.now() - startTime;
+
+  // Log the mock execution
+  logExecution({
+    routeId: mock.routeId,
+    routeName: `[MOCK] ${mock.name}`,
+    inboundMethod: req.method,
+    inboundPath: req.path,
+    inboundHeaders: req.headers as Record<string, string>,
+    inboundBody: req.body,
+    statusCode: mock.response.statusCode,
+    durationMs: duration,
+    stepResults: {},
+    responseBody: mock.response.body,
+  });
+
   res.status(mock.response.statusCode).json(mock.response.body);
 });
+
+/**
+ * Find the best matching mock — prefers mocks with specific path matches
+ * over generic pattern matches.
+ */
+function findBestMock(method: string, requestPath: string) {
+  const allMocks = db.getAllMocks().filter((m) => m.active);
+  const routes = db.getAllRoutes();
+
+  // First: try exact path match on mock's request.path
+  for (const mock of allMocks) {
+    if (mock.request && mock.request.path) {
+      const mockPath = mock.request.path.replace(/^\//, '');
+      const reqPath = requestPath.replace(/^\//, '');
+      if (mock.request.method === method.toUpperCase() && mockPath === reqPath) {
+        return mock;
+      }
+    }
+  }
+
+  // Second: try route pattern match (returns first match)
+  for (const mock of allMocks) {
+    const route = routes.find((r) => r.id === mock.routeId);
+    if (!route) continue;
+    if (route.method !== method.toUpperCase()) continue;
+    if (matchMockPath(route.path, requestPath)) {
+      return mock;
+    }
+  }
+
+  return null;
+}
+
+function matchMockPath(pattern: string, requestPath: string): boolean {
+  const patternParts = pattern.split('/').filter(Boolean);
+  const pathParts = requestPath.split('/').filter(Boolean);
+  if (patternParts.length !== pathParts.length) return false;
+  for (let i = 0; i < patternParts.length; i++) {
+    if (patternParts[i].startsWith(':')) continue;
+    if (patternParts[i] !== pathParts[i]) return false;
+  }
+  return true;
+}
 
 export default router;

@@ -400,7 +400,14 @@ router.get('/mocks/template/:routeId', (req: Request, res: Response) => {
   }
 
   // Build example response from responseMapping
-  const responseBody = buildExampleResponse(route.responseMapping.body);
+  let responseBody: unknown;
+  if (route.responseMapping.rawPassthrough) {
+    responseBody = { _note: 'This route returns raw binary data (e.g., PDF). Mock with a base64 string or text.' };
+  } else if (route.responseMapping.arrayBody) {
+    responseBody = [{ exampleField: 'example-value' }];
+  } else {
+    responseBody = buildExampleResponse(route.responseMapping.body);
+  }
 
   // Build example query params from first step's queryMapping
   const query: Record<string, string> = {};
@@ -457,6 +464,7 @@ function buildExampleFromTemplate(template: Record<string, unknown>): unknown {
 }
 
 function buildExampleResponse(body: Record<string, unknown>): unknown {
+  if (!body || typeof body !== 'object') return {};
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body)) {
     if (typeof value === 'string') {
