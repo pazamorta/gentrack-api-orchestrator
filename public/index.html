@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Orchestrator</title>
+  <link rel="stylesheet" href="/ui/assets/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-left">
+        <h1>API Orchestrator</h1>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" id="export-btn">⬇ Export</button>
+          <button class="btn btn-secondary btn-sm" id="import-btn">⬆ Import</button>
+          <input type="file" id="import-file" accept=".json" style="display:none">
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-tab="backends">Backends</button>
+        <button class="nav-btn" data-tab="routes">Routes</button>
+        <button class="nav-btn" data-tab="databases">Databases</button>
+        <button class="nav-btn" data-tab="mocks">Mocks</button>
+        <button class="nav-btn" data-tab="logs">Execution Logs</button>
+        <button class="nav-btn" data-tab="audit">Audit</button>
+        <button class="nav-btn" data-tab="test">Test</button>
+      </nav>
+    </header>
+
+    <main class="main">
+      <!-- Backends Tab -->
+      <section id="tab-backends" class="tab-content active">
+        <div class="section-header">
+          <h2>Backend Services</h2>
+          <button class="btn btn-primary" id="add-backend-btn">+ Add Backend</button>
+        </div>
+        <div id="new-backend-panel" class="new-panel hidden">
+          <label>Authentication Type:</label>
+          <select id="new-backend-auth-type">
+            <option value="none">None</option>
+            <option value="api-key">API Key</option>
+            <option value="bearer">Bearer Token</option>
+            <option value="basic">Basic Auth</option>
+            <option value="oauth2">OAuth2 Client Credentials</option>
+            <option value="passthrough">Pass-through (forward caller headers)</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="new-backend-create">Create</button>
+          <button class="btn btn-secondary btn-sm" id="new-backend-cancel">Cancel</button>
+        </div>
+        <input type="text" class="search-bar" id="search-backends" placeholder="Search backends...">
+        <div id="backends-list" class="card-list"></div>
+      </section>
+
+      <!-- Routes Tab -->
+      <section id="tab-routes" class="tab-content">
+        <div class="section-header">
+          <h2>Orchestration Routes</h2>
+          <button class="btn btn-primary" id="add-route-btn">+ Add Route</button>
+        </div>
+        <div id="new-route-panel" class="new-panel hidden">
+          <label>Step Type:</label>
+          <select id="new-route-step-type">
+            <option value="sequential">Sequential</option>
+            <option value="parallel">Parallel</option>
+            <option value="forEach">For Each</option>
+            <option value="conditional">Conditional</option>
+            <option value="database">Database Query</option>
+            <option value="procedure">Stored Procedure</option>
+          </select>
+          <label>Backend/DB:</label>
+          <select id="new-route-backend"></select>
+          <button class="btn btn-primary btn-sm" id="new-route-create">Create</button>
+          <button class="btn btn-secondary btn-sm" id="new-route-cancel">Cancel</button>
+        </div>
+        <input type="text" class="search-bar" id="search-routes" placeholder="Search routes...">
+        <div id="routes-list" class="card-list"></div>
+      </section>
+
+      <!-- Databases Tab -->
+      <section id="tab-databases" class="tab-content">
+        <div class="section-header">
+          <h2>Database Connections</h2>
+          <button class="btn btn-primary" id="add-database-btn">+ Add Database</button>
+        </div>
+        <input type="text" class="search-bar" id="search-databases" placeholder="Search databases...">
+        <div id="databases-list" class="card-list"></div>
+      </section>
+
+      <!-- Mocks Tab -->
+      <section id="tab-mocks" class="tab-content">
+        <div class="section-header">
+          <h2>Mock Responses</h2>
+          <button class="btn btn-primary" id="add-mock-btn">+ Add Mock</button>
+        </div>
+        <div id="new-mock-panel" class="new-panel hidden">
+          <label>Route:</label>
+          <select id="new-mock-route"></select>
+          <button class="btn btn-primary btn-sm" id="new-mock-create">Create</button>
+          <button class="btn btn-secondary btn-sm" id="new-mock-cancel">Cancel</button>
+        </div>
+        <input type="text" class="search-bar" id="search-mocks" placeholder="Search mocks...">
+        <div id="mocks-list" class="card-list"></div>
+      </section>
+
+      <!-- Logs Tab -->
+      <section id="tab-logs" class="tab-content">
+        <div class="section-header">
+          <h2>Execution Logs</h2>
+          <button class="btn btn-secondary" id="refresh-logs-btn">Refresh</button>
+        </div>
+        <div id="logs-list" class="table-container"></div>
+      </section>
+
+      <!-- Audit Tab -->
+      <section id="tab-audit" class="tab-content">
+        <div class="section-header">
+          <h2>Audit History</h2>
+          <button class="btn btn-secondary" id="refresh-audit-btn">Refresh</button>
+        </div>
+        <div class="audit-filters">
+          <select id="audit-filter-type">
+            <option value="">All Types</option>
+            <option value="backend">Backends</option>
+            <option value="route">Routes</option>
+            <option value="database">Databases</option>
+          </select>
+        </div>
+        <div id="audit-list" class="table-container"></div>
+      </section>
+
+      <!-- Test Tab -->
+      <section id="tab-test" class="tab-content">
+        <div class="section-header">
+          <h2>Test Request</h2>
+        </div>
+        <div class="test-panel">
+          <div class="test-form">
+            <div class="form-row">
+              <select id="test-method">
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+              </select>
+              <input type="text" id="test-path" placeholder="/api/orders" value="/api/">
+              <button class="btn btn-primary" id="send-test-btn">Send</button>
+            </div>
+            <div class="form-row">
+              <label>Headers (JSON):</label>
+              <textarea id="test-headers" rows="3">{"Content-Type": "application/json"}</textarea>
+            </div>
+            <div class="form-row">
+              <label>Body (JSON):</label>
+              <textarea id="test-body" rows="6">{}</textarea>
+            </div>
+          </div>
+          <div class="test-result">
+            <h3>Response</h3>
+            <div id="test-response-status"></div>
+            <pre id="test-response-body"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal for editing -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title">Edit</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="editor-container">
+            <div id="line-numbers" class="line-numbers"></div>
+            <textarea id="modal-editor" rows="25"></textarea>
+          </div>
+        </div>
+        <div id="modal-error" class="modal-error hidden"></div>
+        <div id="bracket-status" class="bracket-status"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-copy">Copy</button>
+          <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/ui/assets/app.js"></script>
+</body>
+</html>

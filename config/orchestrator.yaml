@@ -1,0 +1,162 @@
+# ============================================================
+# API Orchestrator Configuration
+# ============================================================
+# This file defines backends (downstream APIs) and routes 
+# (how inbound requests map to backend calls).
+# 
+# On first startup, this YAML is seeded into the SQLite database.
+# After that, use the Admin API to manage configurations.
+# ============================================================
+
+backends:
+  - id: user-service
+    name: User Service
+    baseUrl: https://api.example.com/users
+    auth:
+      type: bearer
+      token: "${USER_SERVICE_TOKEN}"
+    defaultHeaders:
+      X-Service-Name: orchestrator
+    timeout: 5000
+    retry:
+      maxRetries: 2
+      initialDelayMs: 300
+      backoffMultiplier: 2
+
+  - id: order-service
+    name: Order Service
+    baseUrl: https://orders.example.com/api
+    auth:
+      type: api-key
+      headerName: X-API-Key
+      token: "${ORDER_SERVICE_KEY}"
+    timeout: 10000
+
+  - id: payment-service
+    name: Payment Service
+    baseUrl: https://payments.internal.com
+    auth:
+      type: oauth2
+      oauth2:
+        tokenUrl: https://auth.internal.com/oauth/token
+        clientId: "${PAYMENT_CLIENT_ID}"
+        clientSecret: "${PAYMENT_CLIENT_SECRET}"
+        scope: payments:read payments:write
+    timeout: 15000
+    retry:
+      maxRetries: 3
+      initialDelayMs: 1000
+      backoffMultiplier: 2
+      retryableStatusCodes: [502, 503, 504]
+
+  - id: notification-service
+    name: Notification Service
+    baseUrl: https://notify.example.com/v1
+    auth:
+      type: basic
+      username: "${NOTIFY_USER}"
+      password: "${NOTIFY_PASS}"
+    timeout: 5000
+
+routes:
+  # --------------------------------------------------------
+  # Example: Create an order
+  # 1. Validate user exists (sequential)
+  # 2. Create order + initiate payment (parallel)
+  # 3. Send notification (conditional - only if payment succeeded)
+  # --------------------------------------------------------
+  - id: create-order
+    name: Create Order
+    method: POST
+    path: /orders
+    description: >
+      Validates the user, creates an order, processes payment,
+      and sends a notification.
+    steps:
+      # Step 1: Validate the user
+      - type: sequential
+        calls:
+          - stepId: validate-user
+            backendId: user-service
+            method: GET
+            path: "/{{$.inboundRequest.body.userId}}"
+
+      # Step 2: Create order + start payment in parallel
+      - type: parallel
+        calls:
+          - stepId: create-order
+            backendId: order-service
+            method: POST
+            path: /orders
+            bodyMapping:
+              userId: "$.inboundRequest.body.userId"
+              items: "$.inboundRequest.body.items"
+              total: "$.inboundRequest.body.total"
+          - stepId: process-payment
+            backendId: payment-service
+            method: POST
+            path: /charges
+            bodyMapping:
+              amount: "$.inboundRequest.body.total"
+              currency: "$.inboundRequest.body.currency"
+              customerId: "$.inboundRequest.body.userId"
+
+      # Step 3: Notify user only if payment succeeded
+      - type: conditional
+        condition:
+          expression: "$steps.process-payment.statusCode"
+          operator: lt
+          value: 300
+        calls:
+          - stepId: send-notification
+            backendId: notification-service
+            method: POST
+            path: /send
+            bodyMapping:
+              to: "$steps.validate-user.body.email"
+              subject: "Order Confirmed"
+              message: "Your order has been placed successfully."
+        fallbackCalls:
+          - stepId: send-failure-notification
+            backendId: notification-service
+            method: POST
+            path: /send
+            bodyMapping:
+              to: "$steps.validate-user.body.email"
+              subject: "Payment Failed"
+              message: "We could not process your payment. Please try again."
+
+    responseMapping:
+      statusCode: 201
+      body:
+        orderId: "$steps.create-order.body.id"
+        paymentStatus: "$steps.process-payment.body.status"
+        userEmail: "$steps.validate-user.body.email"
+        notificationSent: "$steps.send-notification.statusCode"
+
+  # --------------------------------------------------------
+  # Example: Get user with their orders (parallel fan-out)
+  # --------------------------------------------------------
+  - id: get-user-profile
+    name: Get User Profile
+    method: GET
+    path: /users/:id
+    description: Fetches user details and their orders in parallel
+    steps:
+      - type: parallel
+        calls:
+          - stepId: get-user
+            backendId: user-service
+            method: GET
+            path: "/:id"
+          - stepId: get-orders
+            backendId: order-service
+            method: GET
+            path: /orders
+            queryMapping:
+              userId: "$.inboundRequest.params.id"
+
+    responseMapping:
+      body:
+        user: "$steps.get-user.body"
+        orders: "$steps.get-orders.body.items"

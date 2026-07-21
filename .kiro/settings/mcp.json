@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "atlassian-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "https://mcp.atlassian.com/v1/mcp/authv2"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "searchJiraIssuesUsingJql",
+        "getAccessibleAtlassianResources"
+      ]
+    },
+    "salesforce-dx": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@salesforce/mcp@latest",
+        "--orgs",
+        "DEFAULT_TARGET_ORG",
+        "--toolsets",
+        "all"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
