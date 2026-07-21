@@ -16,7 +16,7 @@ interface Store {
 
 interface AuditEntry {
   id: number;
-  entityType: 'backend' | 'route' | 'database';
+  entityType: 'backend' | 'route' | 'database' | 'mock';
   entityId: string;
   entityName: string;
   action: 'create' | 'update' | 'delete';
@@ -242,7 +242,7 @@ export function deleteDatabase(id: string): boolean {
 // ---- Audit Log ----
 
 function logAudit(
-  entityType: 'backend' | 'route' | 'database',
+  entityType: 'backend' | 'route' | 'database' | 'mock',
   entityId: string,
   entityName: string,
   action: 'create' | 'update' | 'delete',
@@ -343,6 +343,8 @@ function matchMockPath(pattern: string, requestPath: string): boolean {
 
 export function upsertMock(mock: MockDefinition): void {
   if (!store.mocks) store.mocks = [];
+  const existing = store.mocks.find((m) => m.id === mock.id);
+  logAudit('mock', mock.id, mock.name, existing ? 'update' : 'create', existing || null, mock);
   const index = store.mocks.findIndex((m) => m.id === mock.id);
   if (index >= 0) {
     store.mocks[index] = mock;
@@ -354,9 +356,11 @@ export function upsertMock(mock: MockDefinition): void {
 
 export function deleteMock(id: string): boolean {
   if (!store.mocks) return false;
+  const existing = store.mocks.find((m) => m.id === id);
   const before = store.mocks.length;
   store.mocks = store.mocks.filter((m) => m.id !== id);
   if (store.mocks.length < before) {
+    logAudit('mock', id, existing?.name || id, 'delete', existing || null, null);
     persist();
     return true;
   }

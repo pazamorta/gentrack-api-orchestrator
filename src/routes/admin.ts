@@ -133,29 +133,31 @@ router.delete('/routes/:id', (req: Request, res: Response) => {
 // Export / Import Configuration
 // ============================================================
 
-/** Export all configuration (backends, routes, databases) */
+/** Export all configuration (backends, routes, databases, mocks) */
 router.get('/export', (_req: Request, res: Response) => {
   const config = {
     exportedAt: new Date().toISOString(),
     backends: db.getAllBackends(),
     routes: db.getAllRoutes(),
     databases: db.getAllDatabases(),
+    mocks: db.getAllMocks(),
   };
   res.setHeader('Content-Disposition', 'attachment; filename="orchestrator-config.json"');
   res.json(config);
 });
 
-/** Import configuration (backends, routes, databases) */
+/** Import configuration (backends, routes, databases, mocks) */
 router.post('/import', (req: Request, res: Response) => {
-  const { backends, routes, databases, mode } = req.body;
+  const { backends, routes, databases, mocks, mode } = req.body;
   const mergeMode = mode || 'merge'; // 'merge' or 'replace'
-  let imported = { backends: 0, routes: 0, databases: 0 };
+  let imported = { backends: 0, routes: 0, databases: 0, mocks: 0 };
 
   if (mergeMode === 'replace') {
     // Clear existing data first
     for (const b of db.getAllBackends()) db.deleteBackend(b.id);
     for (const r of db.getAllRoutes()) db.deleteRoute(r.id);
     for (const d of db.getAllDatabases()) db.deleteDatabase(d.id);
+    for (const m of db.getAllMocks()) db.deleteMock(m.id);
   }
 
   if (backends && Array.isArray(backends)) {
@@ -176,6 +178,13 @@ router.post('/import', (req: Request, res: Response) => {
     for (const database of databases) {
       db.upsertDatabase(database);
       imported.databases++;
+    }
+  }
+
+  if (mocks && Array.isArray(mocks)) {
+    for (const mock of mocks) {
+      db.upsertMock(mock);
+      imported.mocks++;
     }
   }
 

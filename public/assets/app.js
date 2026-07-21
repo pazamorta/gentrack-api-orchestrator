@@ -1088,12 +1088,13 @@ async function importConfig(event) {
       body: JSON.stringify({ ...config, mode }),
     });
     const result = await res.json();
-    alert(`${result.message}\n\nBackends: ${result.imported.backends}\nRoutes: ${result.imported.routes}\nDatabases: ${result.imported.databases}`);
+    alert(`${result.message}\n\nBackends: ${result.imported.backends}\nRoutes: ${result.imported.routes}\nDatabases: ${result.imported.databases}\nMocks: ${result.imported.mocks || 0}`);
 
     // Reload all data
     loadBackends();
     loadRoutes();
     loadDatabases();
+    loadMocks();
   } catch (err) {
     alert('Import failed: ' + err.message);
   }
