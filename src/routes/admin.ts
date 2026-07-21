@@ -361,12 +361,55 @@ router.get('/mocks/template/:routeId', (req: Request, res: Response) => {
     return;
   }
 
-  // Build template from route config
+  // Build path params from route pattern
   const params: Record<string, string> = {};
   const pathParts = route.path.split('/');
   for (const part of pathParts) {
     if (part.startsWith(':')) {
       params[part.slice(1)] = 'example-value';
+    }
+  }
+
+  // Build example request body from first step's bodyMapping/bodyTemplate
+  let requestBody: unknown = undefined;
+  if (route.method === 'POST' || route.method === 'PUT' || route.method === 'PATCH') {
+    const firstStep = route.steps[0];
+    if (firstStep && firstStep.calls && firstStep.calls[0]) {
+      const call = firstStep.calls[0];
+      if (call.bodyTemplate) {
+        // Show the bodyTemplate structure as expected input
+        requestBody = buildExampleFromTemplate(call.bodyTemplate);
+      } else if (call.bodyMapping && Object.keys(call.bodyMapping).length > 0) {
+        // Show expected fields from bodyMapping
+        const body: Record<string, string> = {};
+        for (const [key, expr] of Object.entries(call.bodyMapping)) {
+          if (typeof expr === 'string' && expr.includes('inboundRequest.body')) {
+            const fieldPath = expr.replace(/.*inboundRequest\.body\.?/, '');
+            body[fieldPath || key] = 'example-value';
+          } else {
+            body[key] = String(expr);
+          }
+        }
+        requestBody = body;
+      } else {
+        requestBody = {};
+      }
+    } else {
+      requestBody = {};
+    }
+  }
+
+  // Build example response from responseMapping
+  const responseBody = buildExampleResponse(route.responseMapping.body);
+
+  // Build example query params from first step's queryMapping
+  const query: Record<string, string> = {};
+  const firstStep = route.steps[0];
+  if (firstStep && firstStep.calls && firstStep.calls[0] && firstStep.calls[0].queryMapping) {
+    for (const [key, expr] of Object.entries(firstStep.calls[0].queryMapping)) {
+      if (typeof expr === 'string' && expr.includes('inboundRequest.query')) {
+        query[key] = 'example-value';
+      }
     }
   }
 
@@ -377,15 +420,15 @@ router.get('/mocks/template/:routeId', (req: Request, res: Response) => {
     request: {
       method: route.method,
       path: route.path.replace(/:([a-zA-Z_]\w*)/g, 'example-value'),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer example-token' },
       params,
-      query: {},
-      body: route.method === 'POST' || route.method === 'PUT' ? {} : undefined,
+      query: Object.keys(query).length > 0 ? query : undefined,
+      body: requestBody,
     },
     response: {
-      statusCode: 200,
+      statusCode: typeof route.responseMapping.statusCode === 'number' ? route.responseMapping.statusCode : 200,
       headers: { 'Content-Type': 'application/json' },
-      body: {},
+      body: responseBody,
     },
     active: true,
     createdAt: '',
@@ -393,6 +436,75 @@ router.get('/mocks/template/:routeId', (req: Request, res: Response) => {
 
   res.json(template);
 });
+
+function buildExampleFromTemplate(template: Record<string, unknown>): unknown {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(template)) {
+    if (key.startsWith('$')) continue; // Skip directives
+    if (typeof value === 'boolean' || typeof value === 'number') {
+      result[key] = value;
+    } else if (typeof value === 'string') {
+      result[key] = 'example-value';
+    } else if (typeof value === 'object' && value !== null) {
+      if ('$source' in (value as Record<string, unknown>)) {
+        result[key] = [{ exampleField: 'example-value' }];
+      } else {
+        result[key] = buildExampleFromTemplate(value as Record<string, unknown>);
+      }
+    }
+  }
+  return result;
+}
+
+function buildExampleResponse(body: Record<string, unknown>): unknown {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (typeof value === 'string') {
+      if (value.startsWith('$steps.') || value.startsWith('$.')) {
+        result[key] = 'example-value';
+      } else {
+        result[key] = value; // Literal
+      }
+    } else if (typeof value === 'boolean' || typeof value === 'number') {
+      result[key] = value;
+    } else if (value !== null && typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      if ('$source' in obj && '$pick' in obj) {
+        // Array with $source/$pick — show example array
+        const pick = obj['$pick'] as Record<string, unknown>;
+        const exampleItem: Record<string, unknown> = {};
+        for (const [pKey, pVal] of Object.entries(pick)) {
+          if (typeof pVal === 'string' && (pVal.startsWith('$.') || pVal.startsWith('$steps.'))) {
+            exampleItem[pKey] = 'example-value';
+          } else if (typeof pVal === 'string') {
+            exampleItem[pKey] = pVal;
+          } else if (typeof pVal === 'boolean' || typeof pVal === 'number') {
+            exampleItem[pKey] = pVal;
+          } else {
+            exampleItem[pKey] = 'example-value';
+          }
+        }
+        result[key] = [exampleItem];
+      } else if ('$switch' in obj) {
+        result[key] = 'example-value';
+      } else if ('$concat' in obj) {
+        result[key] = 'example concatenated value';
+      } else if ('$filter' in obj) {
+        result[key] = [{ exampleField: 'example-value' }];
+      } else if ('$calc' in obj) {
+        result[key] = 0;
+      } else if ('$dateAdd' in obj) {
+        result[key] = '2026-01-01';
+      } else if ('$derive' in obj) {
+        result[key] = 'example-derived-value';
+      } else {
+        // Nested object — recurse
+        result[key] = buildExampleResponse(obj);
+      }
+    }
+  }
+  return result;
+}
 
 /** Update a mock */
 router.put('/mocks/:id', (req: Request, res: Response) => {
