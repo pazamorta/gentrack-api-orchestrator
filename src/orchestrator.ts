@@ -418,9 +418,10 @@ async function executeBackendCall(
         baseHeaders['Content-Type'] = 'application/json';
       }
 
-      // Forward inbound headers if configured
+      // Forward inbound headers if configured (call-level overrides backend-level)
       const forwardedHeaders: Record<string, string> = {};
-      if (call.forwardHeaders) {
+      const effectiveForwardHeaders = call.forwardHeaders || backend.forwardHeaders;
+      if (effectiveForwardHeaders) {
         const inboundHeaders = context.inboundRequest.headers;
         // Headers to never forward (hop-by-hop and problematic)
         const skipHeaders = new Set([
@@ -441,7 +442,7 @@ async function executeBackendCall(
           'x-request-id': 'X-Request-Id',
         };
 
-        if (call.forwardHeaders === true) {
+        if (effectiveForwardHeaders === true) {
           // Forward all headers except skip list
           for (const [key, value] of Object.entries(inboundHeaders)) {
             if (!skipHeaders.has(key.toLowerCase()) && value) {
@@ -449,9 +450,9 @@ async function executeBackendCall(
               forwardedHeaders[properKey] = String(value);
             }
           }
-        } else if (Array.isArray(call.forwardHeaders)) {
+        } else if (Array.isArray(effectiveForwardHeaders)) {
           // Forward only specified headers
-          for (const headerName of call.forwardHeaders) {
+          for (const headerName of effectiveForwardHeaders) {
             const value = inboundHeaders[headerName.toLowerCase()];
             if (value) {
               const properKey = headerCasing[headerName.toLowerCase()] || headerName;

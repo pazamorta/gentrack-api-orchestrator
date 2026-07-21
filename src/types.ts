@@ -51,6 +51,8 @@ export interface BackendApp {
   timeout?: number;
   /** Default retry policy for this backend */
   retry?: RetryConfig;
+  /** Forward inbound request headers to this backend by default (true = all, or array of names) */
+  forwardHeaders?: boolean | string[];
 }
 
 /** HTTP methods */
