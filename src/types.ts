@@ -226,6 +226,14 @@ export interface StepResult {
   headers: Record<string, string>;
   body: unknown;
   duration: number;
+  /** Outbound request details (for debugging) */
+  request?: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    params?: Record<string, string>;
+    body?: unknown;
+  };
 }
 
 /** A mock definition for a route */

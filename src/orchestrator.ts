@@ -359,6 +359,9 @@ async function executeBackendCall(
 
   const startTime = Date.now();
 
+  // Track outbound request details for logging
+  let lastRequestInfo: { method: string; url: string; headers?: Record<string, string>; params?: Record<string, string>; body?: unknown } | undefined;
+
   const retryResult = await withRetry(
     async () => {
       // Resolve auth headers (re-resolved on each attempt for token refresh)
@@ -476,6 +479,15 @@ async function executeBackendCall(
         if (data) console.log(`[orchestrator]   Outbound Body:`, JSON.stringify(data).slice(0, 1000));
       }
 
+      // Capture request details for step results
+      lastRequestInfo = {
+        method: call.method,
+        url,
+        headers,
+        params,
+        body: data,
+      };
+
       const config: AxiosRequestConfig = {
         method: call.method,
         url,
@@ -570,11 +582,19 @@ async function executeBackendCall(
       headers: response.headers as Record<string, string>,
       body,
       duration,
+      request: lastRequestInfo,
     };
   }
 
-  // All retries exhausted — return error result
-  throw retryResult.error || new Error(`Backend call "${call.stepId}" failed after ${retryResult.attempts} attempts`);
+  // All retries exhausted — return error result with request info
+  const errorMessage = retryResult.error instanceof Error ? retryResult.error.message : `Backend call "${call.stepId}" failed after ${retryResult.attempts} attempts`;
+  return {
+    statusCode: 500,
+    headers: {},
+    body: { error: errorMessage },
+    duration: Date.now() - startTime,
+    request: lastRequestInfo,
+  };
 }
 
 /**
