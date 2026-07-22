@@ -107,7 +107,10 @@
       <section id="tab-logs" class="tab-content">
         <div class="section-header">
           <h2>Execution Logs</h2>
-          <button class="btn btn-secondary" id="refresh-logs-btn">Refresh</button>
+          <div>
+            <button class="btn btn-secondary" id="refresh-logs-btn">Refresh</button>
+            <button class="btn btn-danger btn-sm" id="clear-logs-btn">Clear Logs</button>
+          </div>
         </div>
         <div id="logs-list" class="table-container"></div>
       </section>
@@ -116,7 +119,10 @@
       <section id="tab-audit" class="tab-content">
         <div class="section-header">
           <h2>Audit History</h2>
-          <button class="btn btn-secondary" id="refresh-audit-btn">Refresh</button>
+          <div>
+            <button class="btn btn-secondary" id="refresh-audit-btn">Refresh</button>
+            <button class="btn btn-danger btn-sm" id="clear-audit-btn">Clear Audit</button>
+          </div>
         </div>
         <div class="audit-filters">
           <select id="audit-filter-type">

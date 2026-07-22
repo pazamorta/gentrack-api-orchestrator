@@ -205,6 +205,12 @@ router.get('/logs', (req: Request, res: Response) => {
   res.json({ logs });
 });
 
+/** Clear all execution logs */
+router.delete('/logs', (_req: Request, res: Response) => {
+  db.clearExecutionLog();
+  res.json({ message: 'Execution logs cleared' });
+});
+
 /** Get a single execution log entry with full details */
 router.get('/logs/:id', (req: Request, res: Response) => {
   const entry = db.getExecutionEntry(parseInt(req.params.id));
@@ -284,6 +290,12 @@ router.get('/audit', (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const entries = db.getAuditLog(entityType, entityId, limit);
   res.json({ audit: entries });
+});
+
+/** Clear audit history (retains latest change per entity) */
+router.delete('/audit', (_req: Request, res: Response) => {
+  db.clearAuditLog();
+  res.json({ message: 'Audit history cleared (latest per entity retained)' });
 });
 
 /** Get a single audit entry */

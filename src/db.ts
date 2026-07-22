@@ -4,12 +4,16 @@ import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from './t
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
 const DB_PATH = path.join(DB_DIR, 'store.json');
+const LOGS_PATH = path.join(DB_DIR, 'logs.json');
 
 interface Store {
   backends: BackendApp[];
   routes: RouteConfig[];
   databases: DatabaseConnection[];
   mocks: MockDefinition[];
+}
+
+interface LogsStore {
   executionLog: ExecutionEntry[];
   auditLog: AuditEntry[];
 }
@@ -46,6 +50,9 @@ let store: Store = {
   routes: [],
   databases: [],
   mocks: [],
+};
+
+let logsStore: LogsStore = {
   executionLog: [],
   auditLog: [],
 };
@@ -61,31 +68,47 @@ export async function initDb(): Promise<void> {
     fs.mkdirSync(DB_DIR, { recursive: true });
   }
 
+  // Load config store
   if (fs.existsSync(DB_PATH)) {
     try {
       const raw = fs.readFileSync(DB_PATH, 'utf-8');
       store = JSON.parse(raw);
-      // Determine next log ID
-      if (store.executionLog.length > 0) {
-        nextLogId = Math.max(...store.executionLog.map((e) => e.id)) + 1;
-      }
-      if (store.auditLog && store.auditLog.length > 0) {
-        nextAuditId = Math.max(...store.auditLog.map((e) => e.id)) + 1;
-      }
-      if (!store.auditLog) store.auditLog = [];
       if (!store.mocks) store.mocks = [];
     } catch {
-      // Corrupted file, start fresh
-      store = { backends: [], routes: [], databases: [], mocks: [], executionLog: [], auditLog: [] };
+      store = { backends: [], routes: [], databases: [], mocks: [] };
+    }
+  }
+
+  // Load logs store (separate file)
+  if (fs.existsSync(LOGS_PATH)) {
+    try {
+      const raw = fs.readFileSync(LOGS_PATH, 'utf-8');
+      logsStore = JSON.parse(raw);
+      if (!logsStore.executionLog) logsStore.executionLog = [];
+      if (!logsStore.auditLog) logsStore.auditLog = [];
+      if (logsStore.executionLog.length > 0) {
+        nextLogId = Math.max(...logsStore.executionLog.map((e) => e.id)) + 1;
+      }
+      if (logsStore.auditLog.length > 0) {
+        nextAuditId = Math.max(...logsStore.auditLog.map((e) => e.id)) + 1;
+      }
+    } catch {
+      logsStore = { executionLog: [], auditLog: [] };
     }
   }
 
   persist();
+  persistLogs();
 }
 
-/** Write the store to disk */
+/** Write the config store to disk */
 function persist(): void {
   fs.writeFileSync(DB_PATH, JSON.stringify(store, null, 2), 'utf-8');
+}
+
+/** Write the logs store to disk */
+function persistLogs(): void {
+  fs.writeFileSync(LOGS_PATH, JSON.stringify(logsStore, null, 2), 'utf-8');
 }
 
 // ---- Backend CRUD ----
@@ -171,7 +194,7 @@ export function logExecution(entry: {
   responseBody?: unknown;
   error?: string;
 }): void {
-  store.executionLog.push({
+  logsStore.executionLog.push({
     id: nextLogId++,
     route_id: entry.routeId,
     route_name: entry.routeName,
@@ -188,19 +211,24 @@ export function logExecution(entry: {
   });
 
   // Keep only the last 500 entries
-  if (store.executionLog.length > 500) {
-    store.executionLog = store.executionLog.slice(-500);
+  if (logsStore.executionLog.length > 500) {
+    logsStore.executionLog = logsStore.executionLog.slice(-500);
   }
 
-  persist();
+  persistLogs();
 }
 
 export function getExecutionEntry(id: number): ExecutionEntry | null {
-  return store.executionLog.find((e) => e.id === id) || null;
+  return logsStore.executionLog.find((e) => e.id === id) || null;
 }
 
 export function getRecentExecutions(limit = 50): ExecutionEntry[] {
-  return store.executionLog.slice(-limit).reverse();
+  return logsStore.executionLog.slice(-limit).reverse();
+}
+
+export function clearExecutionLog(): void {
+  logsStore.executionLog = [];
+  persistLogs();
 }
 
 // ---- Database Connections CRUD ----
@@ -249,8 +277,8 @@ function logAudit(
   previous: unknown,
   current: unknown
 ): void {
-  if (!store.auditLog) store.auditLog = [];
-  store.auditLog.push({
+  if (!logsStore.auditLog) logsStore.auditLog = [];
+  logsStore.auditLog.push({
     id: nextAuditId++,
     entityType,
     entityId,
@@ -262,13 +290,28 @@ function logAudit(
   });
 
   // Keep only the last 1000 audit entries
-  if (store.auditLog.length > 1000) {
-    store.auditLog = store.auditLog.slice(-1000);
+  if (logsStore.auditLog.length > 1000) {
+    logsStore.auditLog = logsStore.auditLog.slice(-1000);
   }
+  persistLogs();
+}
+
+export function clearAuditLog(): void {
+  // Keep only the latest entry per unique entity
+  const latestByEntity = new Map<string, AuditEntry>();
+  for (const entry of logsStore.auditLog) {
+    const key = `${entry.entityType}:${entry.entityId}`;
+    const existing = latestByEntity.get(key);
+    if (!existing || entry.id > existing.id) {
+      latestByEntity.set(key, entry);
+    }
+  }
+  logsStore.auditLog = Array.from(latestByEntity.values());
+  persistLogs();
 }
 
 export function getAuditLog(entityType?: string, entityId?: string, limit = 50): AuditEntry[] {
-  let entries = store.auditLog || [];
+  let entries = logsStore.auditLog || [];
   if (entityType) {
     entries = entries.filter((e) => e.entityType === entityType);
   }
@@ -279,7 +322,7 @@ export function getAuditLog(entityType?: string, entityId?: string, limit = 50):
 }
 
 export function getAuditEntry(id: number): AuditEntry | null {
-  return (store.auditLog || []).find((e) => e.id === id) || null;
+  return (logsStore.auditLog || []).find((e) => e.id === id) || null;
 }
 
 export function rollbackEntity(auditId: number): boolean {

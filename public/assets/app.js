@@ -62,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     await createNewMock(routeId);
   });
   document.getElementById('refresh-logs-btn').addEventListener('click', loadLogs);
+  document.getElementById('clear-logs-btn').addEventListener('click', clearLogs);
   document.getElementById('refresh-audit-btn').addEventListener('click', loadAudit);
+  document.getElementById('clear-audit-btn').addEventListener('click', clearAudit);
   document.getElementById('audit-filter-type').addEventListener('change', loadAudit);
   document.getElementById('export-btn').addEventListener('click', exportConfig);
   document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
@@ -614,6 +616,16 @@ async function loadLogs() {
   }
 }
 
+async function clearLogs() {
+  if (!confirm('Clear all execution logs?')) return;
+  try {
+    await fetch(`${API_BASE}/logs`, { method: 'DELETE' });
+    loadLogs();
+  } catch (err) {
+    alert('Failed to clear logs: ' + err.message);
+  }
+}
+
 function renderLogs(logs) {
   const container = document.getElementById('logs-list');
   if (logs.length === 0) {
@@ -693,6 +705,16 @@ async function loadAudit() {
     renderAudit(data.audit || []);
   } catch (err) {
     console.error('Failed to load audit:', err);
+  }
+}
+
+async function clearAudit() {
+  if (!confirm('Clear audit history? (The latest change for each record will be retained)')) return;
+  try {
+    await fetch(`${API_BASE}/audit`, { method: 'DELETE' });
+    loadAudit();
+  } catch (err) {
+    alert('Failed to clear audit: ' + err.message);
   }
 }
 
