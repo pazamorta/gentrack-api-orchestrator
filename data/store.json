@@ -151,11 +151,11 @@
               "service.servicePoints": {
                 "$source": "$.meters",
                 "$pick": {
-                  "globalReference": "$item.id",
-                  "serviceExternal.type": "$item.type",
-                  "serviceExternal.id": "$item.identifier",
+                  "globalReference": "$parent.id",
+                  "serviceExternal.type": "$parent.type",
+                  "serviceExternal.id": "$parent.identifier",
                   "serviceType": "Not Mapped",
-                  "connectionStatus": "$item.supplyStatus"
+                  "connectionStatus": "$parent.supplyStatus"
                 }
               },
               "devices.deviceExternal.source": "serialNumber",
