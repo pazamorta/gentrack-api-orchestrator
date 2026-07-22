@@ -37,7 +37,7 @@
       "name": "GET Account",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID",
+      "path": "v1/accounts/:globalID",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -77,7 +77,7 @@
       "name": "Get Account Services",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/services",
+      "path": "v1/accounts/:globalID/services",
       "description": "Gets the service and meter point details linked to an account",
       "steps": [
         {
@@ -163,7 +163,7 @@
       "name": "Get Account Workflows",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/workflows",
+      "path": "v1/accounts/:globalID/workflows",
       "steps": [
         {
           "type": "sequential",
@@ -214,7 +214,7 @@
       "name": "Get Financial Transactions",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/financial-transactions",
+      "path": "v1/accounts/:globalID/financial-transactions",
       "description": "Returns financial transactions from Junifer and maps them to the uAPI",
       "steps": [
         {
@@ -261,7 +261,7 @@
       "name": "Get Account Financial Summary",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/financial-summary",
+      "path": "v1/accounts/:globalID/financial-summary",
       "description": "Returns various financial artifacts from junifer and maps them to the uAPI",
       "steps": [
         {
@@ -488,7 +488,7 @@
       "name": "GET Account Next Bill Details",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/next-bill-details",
+      "path": "v1/accounts/:globalID/next-bill-details",
       "description": "Get the account next bill details from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -544,7 +544,7 @@
       "name": "GET Account Communications",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/communications",
+      "path": "v1/accounts/:globalID/communications",
       "description": "Get account communications from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -610,7 +610,7 @@
       "name": "GET Account Contracts",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/contracts",
+      "path": "v1/accounts/:globalID/contracts",
       "description": "Get the account billing agreement records from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -707,7 +707,7 @@
       "name": "GET Account Current Contracts",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/current-contracts",
+      "path": "v1/accounts/:globalID/current-contracts",
       "description": "Get the accounts current contracts and product details from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -783,7 +783,7 @@
       "id": "e0e9de7e-1ec1-4247-80d7-ea1476c30718",
       "name": "GET Customer",
       "method": "GET",
-      "path": "/customers/:globalID",
+      "path": "v1/customers/:globalID",
       "description": "Get the customer record from Junifer using the Global ID as the customer number",
       "steps": [
         {
@@ -837,7 +837,7 @@
       "name": "GET Account Bills",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/bills",
+      "path": "v1/accounts/:globalID/bills",
       "description": "Get the account bills records from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -889,7 +889,7 @@
       "name": "GET Account Suspensions",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/suspensions",
+      "path": "v1/accounts/:globalID/suspensions",
       "description": "Get the account review periods from Junifer using the Global ID as the account number and map them to account suspensions",
       "steps": [
         {
@@ -981,7 +981,7 @@
       "id": "08ef3b32-399c-43f1-8b11-9c86342dc7f5",
       "name": "GET Service Point Meter Structure",
       "method": "GET",
-      "path": "/service-points/:externalType/:externalId/meter-read-structure",
+      "path": "v1/service-points/:externalType/:externalId/meter-read-structure",
       "description": "Get the meter structure from Junifer using the service external details of the service point",
       "steps": [
         {
@@ -1059,7 +1059,7 @@
       "name": "GET Service Point Meter Read History",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/service-points/:externalType/:externalId/meter-read-history",
+      "path": "v1/service-points/:externalType/:externalId/meter-read-history",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1190,7 +1190,7 @@
       "name": "GET Bill Image",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/bills/:billID/image",
+      "path": "v1/bills/:billID/image",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1227,7 +1227,7 @@
       "name": "GET Bill Meter Reads",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/bills/:billID/meter-reads",
+      "path": "v1/bills/:billID/meter-reads",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1274,7 +1274,7 @@
       "name": "GET Next Payment Details",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/next-payment-details",
+      "path": "v1/accounts/:globalID/next-payment-details",
       "description": "Get the latest and next payment details from junifer and map it to the unified api",
       "steps": [
         {
@@ -1336,7 +1336,7 @@
       "name": "GET Contact",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/contacts/:globalID",
+      "path": "v1/contacts/:globalID",
       "description": "Get the contact record from Junifer using the Global ID as the contact id",
       "steps": [
         {
@@ -1444,7 +1444,7 @@
       "name": "GET Service Point Details",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/service-points/:externalType/:externalId",
+      "path": "v1/service-points/:externalType/:externalId",
       "description": "Get the service point details from Junifer using the service external details of the service point",
       "steps": [
         {
@@ -1583,7 +1583,7 @@
       "name": "GET Account Estimated Costs",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/estimated-costs",
+      "path": "v1/accounts/:globalID/estimated-costs",
       "description": "Get the account estimnated costs from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1629,7 +1629,7 @@
       "name": "GET Account Debt Management",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/debt-management",
+      "path": "v1/accounts/:globalID/debt-management",
       "description": "Get account debt management data from Junifer training database via stored procedure",
       "steps": [
         {
@@ -1701,7 +1701,7 @@
       "logLevel": "debug",
       "name": "Get Refunds",
       "method": "GET",
-      "path": "/accounts/:globalID/refunds",
+      "path": "v1/accounts/:globalID/refunds",
       "description": "Returns refund transactions from Junifer and maps them to the uAPI",
       "steps": [
         {
@@ -1752,7 +1752,7 @@
       "name": "GET Account Payment Arrangements",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/payment-arrangements",
+      "path": "v1/accounts/:globalID/payment-arrangements",
       "description": "Get the account payment schedule details from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1820,7 +1820,7 @@
       "logLevel": "debug",
       "name": "GET Account Suggested Payment",
       "method": "GET",
-      "path": "/accounts/:globalID/suggested-payment-amount",
+      "path": "v1/accounts/:globalID/suggested-payment-amount",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1878,7 +1878,7 @@
       "logLevel": "debug",
       "name": "GET Account Payment Review Date",
       "method": "GET",
-      "path": "/accounts/:globalID/payment-review-date",
+      "path": "v1/accounts/:globalID/payment-review-date",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1916,7 +1916,7 @@
       "name": "GET Account Payment Terms",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/payment-terms",
+      "path": "v1/accounts/:globalID/payment-terms",
       "description": "Get the account payment terms record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -1955,7 +1955,7 @@
       "name": "GET bill details",
       "logLevel": "debug",
       "method": "GET",
-      "path": "bills/:billId/details",
+      "path": "v1/bills/:billId/details",
       "description": "Get the details of a bill record from Junifer using the Bill ID",
       "steps": [
         {
@@ -2019,7 +2019,7 @@
       "name": "GET Account Bills Requests",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/accounts/:globalID/bill-requests",
+      "path": "v1/accounts/:globalID/bill-requests",
       "description": "Get the account bills records from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -2161,7 +2161,7 @@
       "name": "GET Workflow Details",
       "logLevel": "debug",
       "method": "GET",
-      "path": "/workflows/:workflowID",
+      "path": "v1/workflows/:workflowID",
       "description": "Get ticket history details from Junifer training database via stored procedure",
       "steps": [
         {
@@ -2209,7 +2209,7 @@
       "name": "Post Validate Meter Reading",
       "logLevel": "debug",
       "method": "POST",
-      "path": "/service-points/:externalType/:externalId/validate-meter-readings",
+      "path": "v1/service-points/:externalType/:externalId/validate-meter-readings",
       "description": "Submit a meter reading for validation",
       "steps": [
         {
@@ -2315,7 +2315,7 @@
       "name": "Mock - Get Account Services",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/services",
+        "path": "v1/accounts/00000101/services",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -2423,7 +2423,7 @@
       "name": "Mock - Get Account Workflows",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/workflows",
+        "path": "v1/accounts/00000101/workflows",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -2483,7 +2483,7 @@
       "name": "Mock - Get Financial Transactions",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/financial-transactions",
+        "path": "v1/accounts/00000101/financial-transactions",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4407,7 +4407,7 @@
       "name": "Mock - Get Account Financial Summary",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/financial-summary",
+        "path": "v1/accounts/00000101/financial-summary",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4585,7 +4585,7 @@
       "name": "Mock - GET Account Next Bill Details",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/next-bill-details",
+        "path": "v1/accounts/00000101/next-bill-details",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4630,7 +4630,7 @@
       "name": "Mock - GET Account Communications",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/communications",
+        "path": "v1/accounts/00000101/communications",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4738,7 +4738,7 @@
       "name": "Mock - GET Account Contracts",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/contracts",
+        "path": "v1/accounts/00000101/contracts",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4860,7 +4860,7 @@
       "name": "Mock - GET Account Current Contracts",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/current-contracts",
+        "path": "v1/accounts/00000101/current-contracts",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4933,7 +4933,7 @@
       "name": "Mock - GET Customer",
       "request": {
         "method": "GET",
-        "path": "/customers/00000101",
+        "path": "v1/customers/00000101",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -4977,7 +4977,7 @@
       "name": "Mock - GET Account Bills",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/bills",
+        "path": "v1/accounts/00000101/bills",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -7733,7 +7733,7 @@
       "name": "Mock - GET Account Suspensions",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/suspensions",
+        "path": "v1/accounts/00000101/suspensions",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -7779,7 +7779,7 @@
       "name": "Mock - GET Service Point Meter Structure 1",
       "request": {
         "method": "GET",
-        "path": "/service-points/MPAN/1111111111114/meter-read-structure",
+        "path": "v1/service-points/MPAN/1111111111114/meter-read-structure",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -7846,7 +7846,7 @@
       "name": "Mock - GET Service Point Meter Structure 2",
       "request": {
         "method": "GET",
-        "path": "/service-points/MPRN/111111/meter-read-structure",
+        "path": "v1/service-points/MPRN/111111/meter-read-structure",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -7913,7 +7913,7 @@
       "name": "Mock - GET Service Point Meter Read History 1",
       "request": {
         "method": "GET",
-        "path": "/service-points/MPAN/1111111111114/meter-read-history",
+        "path": "v1/service-points/MPAN/1111111111114/meter-read-history",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -8864,7 +8864,7 @@
       "name": "Mock - GET Service Point Meter Read History",
       "request": {
         "method": "GET",
-        "path": "/service-points/MPRN/111111/meter-read-history",
+        "path": "v1/service-points/MPRN/111111/meter-read-history",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -9814,7 +9814,7 @@
       "name": "Mock - GET Bill Image",
       "request": {
         "method": "GET",
-        "path": "/bills/11803/image",
+        "path": "v1/bills/11803/image",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -9841,7 +9841,7 @@
       "name": "Mock - GET Bill Meter Reads",
       "request": {
         "method": "GET",
-        "path": "/bills/11803/meter-reads",
+        "path": "v1/bills/11803/meter-reads",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -9936,7 +9936,7 @@
       "name": "Mock - GET Contact",
       "request": {
         "method": "GET",
-        "path": "/contacts/5",
+        "path": "v1/contacts/5",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -9998,7 +9998,7 @@
       "name": "Mock - GET Service Point Details 1",
       "request": {
         "method": "GET",
-        "path": "/service-points/MPAN/1111111111114",
+        "path": "v1/service-points/MPAN/1111111111114",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -10200,7 +10200,7 @@
       "name": "Mock - GET Account Estimated Costs",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/estimated-costs",
+        "path": "v1/accounts/00000101/estimated-costs",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -10232,7 +10232,7 @@
       "name": "Mock - GET Account Debt Management",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/debt-management",
+        "path": "v1/accounts/00000101/debt-management",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18242,7 +18242,7 @@
       "name": "Mock - Get Refunds",
       "request": {
         "method": "GET",
-        "path": "/accounts/example-value/refunds",
+        "path": "v1/accounts/example-value/refunds",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18314,7 +18314,7 @@
       "name": "Mock - GET Account Suggested Payment",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/suggested-payment-amount",
+        "path": "v1/accounts/00000101/suggested-payment-amount",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18344,7 +18344,7 @@
       "name": "Mock - GET Account Payment Review Date",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/payment-review-date",
+        "path": "v1/accounts/00000101/payment-review-date",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18371,7 +18371,7 @@
       "name": "Mock - GET Account Payment Terms",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/payment-terms",
+        "path": "v1/accounts/00000101/payment-terms",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18398,7 +18398,7 @@
       "name": "Mock - GET Account Bills Requests",
       "request": {
         "method": "GET",
-        "path": "/accounts/00000101/bill-requests",
+        "path": "v1/accounts/00000101/bill-requests",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -18465,7 +18465,7 @@
       "name": "Mock - GET Workflow Details",
       "request": {
         "method": "GET",
-        "path": "/workflows/201",
+        "path": "v1/workflows/201",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"

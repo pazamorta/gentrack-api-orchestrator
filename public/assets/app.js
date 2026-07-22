@@ -508,7 +508,9 @@ function renderMocks() {
 
   container.innerHTML = mocks.map((m) => {
     const route = routes.find((r) => r.id === m.routeId);
-    const routeLabel = route ? `${route.method} ${route.path}` : m.routeId;
+    const method = (m.request && m.request.method) || (route && route.method) || 'GET';
+    const path = (m.request && m.request.path) || (route && route.path) || m.routeId;
+    const routeLabel = `${method} /${path.replace(/^\//, '')}`;
     return `
     <div class="card" data-id="${m.id}">
       <div class="card-info">
