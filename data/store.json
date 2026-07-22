@@ -22,7 +22,10 @@
       "auth": {
         "type": "None"
       },
-      "defaultHeaders": {},
+      "forwardHeaders": ["authorization", "x-on-behalf-of", "x-trace-id"],
+      "defaultHeaders": {
+        "Host": "api-uk.integration.gentrack.cloud"
+      },
       "timeout": 10000,
       "retry": {
         "maxRetries": 3,
