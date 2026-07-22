@@ -138,25 +138,34 @@
               "globalReference": "$.identifier",
               "period.fromDateTime": "$.supplyStartDate",
               "service.globalReference": "$.identifier",
-              "service.serviceType": "$.type",
+              "service.serviceType": {
+                "$switch": "$.type",
+                "$cases": {
+                  "MPAN": "Electricity",
+                  "MPRN": "Gas"
+                },
+                "$default": "Unknown"
+              },
               "service.serviceExternal.type": "$.type",
               "service.serviceExternal.id": "$.identifier",
-              "service.connectionStatus": "$.supplyStatus",
-              "devices": {
-                "$source": "$.meters",
+              "service.servicePoints": [
+                {
+                  "globalReference": "$.id",
+                  "serviceExternal.type": "$.type",
+                  "serviceExternal.id": "$.identifier",
+                  "serviceType": "Not Mapped",
+                  "connectionStatus": "$.supplyStatus"
+                }
+              ],
+              "devices.deviceExternal.source": "serialNumber",
+              "devices.deviceExternal.id": "$.meters[0].identifier",
+              "devices.registers": {
+                "$source": "$.meters[0].registers",
                 "$pick": {
-                  "deviceExternal.source": "serialNumber",
-                  "deviceExternal.id": "$.identifier",
-                  "deviceType": "$.meterTypeDescription",
-                  "registers": {
-                    "$source": "$.registers",
-                    "$pick": {
-                      "id": "$.id",
-                      "label": "$.identifier",
-                      "dials": "$.digits",
-                      "unitOfMeasure": "$.unit"
-                    }
-                  }
+                  "id": "$.id",
+                  "label": "$.identifier",
+                  "dials": "$.digits",
+                  "unitOfMeasure": "$.unit"
                 }
               }
             }
