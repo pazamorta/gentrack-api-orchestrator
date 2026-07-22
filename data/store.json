@@ -148,15 +148,16 @@
               },
               "service.serviceExternal.type": "$.type",
               "service.serviceExternal.id": "$.identifier",
-              "service.servicePoints": [
-                {
-                  "globalReference": "$.id",
-                  "serviceExternal.type": "$.type",
-                  "serviceExternal.id": "$.identifier",
+              "service.servicePoints": {
+                "$source": "$.meters",
+                "$pick": {
+                  "globalReference": "$item.id",
+                  "serviceExternal.type": "$item.type",
+                  "serviceExternal.id": "$item.identifier",
                   "serviceType": "Not Mapped",
-                  "connectionStatus": "$.supplyStatus"
+                  "connectionStatus": "$item.supplyStatus"
                 }
-              ],
+              },
               "devices.deviceExternal.source": "serialNumber",
               "devices.deviceExternal.id": "$.meters[0].identifier",
               "devices.registers": {
