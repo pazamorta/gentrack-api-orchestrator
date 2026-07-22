@@ -1075,7 +1075,7 @@
       "name": "GET Service Point Meter Read History",
       "logLevel": "debug",
       "method": "GET",
-      "path": "v1/service-points/:externalType/:externalId/meter-read-history",
+      "path": "v1/service-points/:externalType/:externalId/meter-reads-history",
       "description": "Get the account record from Junifer using the Global ID as the account number",
       "steps": [
         {
@@ -7929,7 +7929,7 @@
       "name": "Mock - GET Service Point Meter Read History 1",
       "request": {
         "method": "GET",
-        "path": "v1/service-points/MPAN/1111111111114/meter-read-history",
+        "path": "v1/service-points/MPAN/1111111111114/meter-reads-history",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -8880,7 +8880,7 @@
       "name": "Mock - GET Service Point Meter Read History",
       "request": {
         "method": "GET",
-        "path": "v1/service-points/MPRN/111111/meter-read-history",
+        "path": "v1/service-points/MPRN/111111/meter-reads-history",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
