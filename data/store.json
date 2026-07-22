@@ -22,7 +22,11 @@
       "auth": {
         "type": "None"
       },
-      "forwardHeaders": ["authorization", "x-on-behalf-of", "x-trace-id"],
+      "forwardHeaders": [
+        "authorization",
+        "x-on-behalf-of",
+        "x-trace-id"
+      ],
       "defaultHeaders": {
         "Host": "api-uk.integration.gentrack.cloud"
       },
@@ -87,23 +91,36 @@
           "type": "sequential",
           "calls": [
             {
-              "stepId": "get-products",
+              "stepId": "get-propertys",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/productDetails",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/propertys",
               "queryMapping": {}
             }
           ]
         },
         {
           "type": "forEach",
-          "iterateOver": "$steps.get-products.body",
+          "iterateOver": "$steps.get-propertys.body.results",
           "calls": [
             {
-              "stepId": "get-meters",
+              "stepId": "get-meterpoints",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/meterPoints/meterPointIdentifier/{{$item.meterPoints[0].identifier}}/meterStructure",
+              "path": "{{$item.links.meterPoints}}",
+              "queryMapping": {}
+            }
+          ]
+        },
+        {
+          "type": "forEach",
+          "iterateOver": "$steps.get-meterpoints.body[*].results[*]",
+          "calls": [
+            {
+              "stepId": "get-meterpoints-structure",
+              "backendId": "gtcx-gcis",
+              "method": "GET",
+              "path": "{{$item.links.meterStructure}}",
               "queryMapping": {
                 "effectiveDt": "$now.date"
               }
@@ -115,44 +132,30 @@
         "statusCode": 200,
         "body": {
           "serviceSupplies": {
-            "$source": "$steps.get-products.body",
-            "$filter": {
-              "field": "meterPoints[0]",
-              "operator": "exists"
-            },
+            "$source": "$steps.get-meterpoints-structure.body",
             "$pick": {
-              "globalId": "$.meterPoints[0].identifier",
-              "globalReference": "$.meterPoints[0].identifier",
-              "period.fromDateTime": "$.meterPoints[0].supplyStartDate",
-              "service.globalReference": "$.meterPoints[0].identifier",
-              "service.serviceType": "$key",
-              "service.serviceExternal.type": "$.meterPoints[0].type",
-              "service.serviceExternal.id": "$.meterPoints[0].identifier",
-              "service.servicePoints": {
-                "$source": "$.meterPoints",
+              "globalId": "$.identifier",
+              "globalReference": "$.identifier",
+              "period.fromDateTime": "$.supplyStartDate",
+              "service.globalReference": "$.identifier",
+              "service.serviceType": "$.type",
+              "service.serviceExternal.type": "$.type",
+              "service.serviceExternal.id": "$.identifier",
+              "service.connectionStatus": "$.supplyStatus",
+              "devices": {
+                "$source": "$.meters",
                 "$pick": {
-                  "globalReference": "$steps.get-meters.body[$$].id",
-                  "serviceExternal.type": "$steps.get-meters.body[$$].type",
-                  "serviceExternal.id": "$steps.get-meters.body[$$].identifier",
-                  "serviceType": "Not Mapped",
-                  "connectionStatus": "$steps.get-meters.body[$$].supplyStatus"
-                }
-              },
-              "devices.deviceExternal.source": "serialNumber",
-              "devices.deviceExternal.id": "$steps.get-meters.body[$$].meters[0].identifier",
-              "devices.registers": {
-                "$source": "$steps.get-meters.body[$$].meters[0].registers",
-                "$pick": {
-                  "id": "$.id",
-                  "label": "$.identifier",
-                  "dials": "$.digits",
-                  "unitOfMeasure": {
-                    "$switch": "$parentKey",
-                    "$cases": {
-                      "Gas": "m3",
-                      "Electricity": "kWh"
-                    },
-                    "$default": "units"
+                  "deviceExternal.source": "serialNumber",
+                  "deviceExternal.id": "$.identifier",
+                  "deviceType": "$.meterTypeDescription",
+                  "registers": {
+                    "$source": "$.registers",
+                    "$pick": {
+                      "id": "$.id",
+                      "label": "$.identifier",
+                      "dials": "$.digits",
+                      "unitOfMeasure": "$.unit"
+                    }
                   }
                 }
               }
