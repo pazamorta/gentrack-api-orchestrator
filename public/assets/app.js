@@ -676,6 +676,7 @@ async function viewLogEntry(id) {
       timestamp: entry.created_at,
       method: entry.inbound_method,
       path: entry.inbound_path,
+      query: entry.inbound_query ? JSON.parse(entry.inbound_query) : null,
       statusCode: entry.status_code,
       duration: `${entry.duration_ms}ms`,
       error: entry.error || null,
