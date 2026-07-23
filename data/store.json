@@ -2268,7 +2268,37 @@
       "responseMapping": {
         "statusCode": "200",
         "body": {
-          "meters": "$.inboundRequest.body.meters"
+          "meters": {
+            "$source": "$.inboundRequest.body.meters",
+            "$pick": {
+              "serialNumber": "$.serialNumber",
+              "deviceId": "$.deviceId",
+              "assetTypeId": "$.assetTypeId",
+              "assetExternal": "$.assetExternal",
+              "readingRegisters": {
+                "$source": "$.readingRegisters",
+                "$pick": {
+                  "id": "$.id",
+                  "label": "$.label",
+                  "dials": "$.dials",
+                  "unitOfMeasure": "$.unitOfMeasure",
+                  "registerStatus": "$.registerStatus",
+                  "purpose": "$.purpose",
+                  "allowsReadingEntry": "$.allowsReadingEntry",
+                  "accumulatorType": "$.accumulatorType",
+                  "meterReadings": "$.meterReadings",
+                  "validationResponse": {
+                    "$source": "$steps.step-1.body.validationErrors",
+                    "$pick": {
+                      "validationCode": "$.errorDetail.errorCode",
+                      "validationStatus": "$.errorDetail.errorSeverity",
+                      "validationDescription": "$.errorDetail.errorDescription"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
