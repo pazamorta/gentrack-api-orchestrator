@@ -35,6 +35,7 @@ interface ExecutionEntry {
   route_name?: string;
   inbound_method: string;
   inbound_path: string;
+  inbound_query?: string;
   inbound_headers?: string;
   inbound_body?: string;
   status_code: number;
@@ -186,6 +187,7 @@ export function logExecution(entry: {
   routeName?: string;
   inboundMethod: string;
   inboundPath: string;
+  inboundQuery?: Record<string, string>;
   inboundHeaders?: Record<string, string>;
   inboundBody?: unknown;
   statusCode: number;
@@ -200,6 +202,7 @@ export function logExecution(entry: {
     route_name: entry.routeName,
     inbound_method: entry.inboundMethod,
     inbound_path: entry.inboundPath,
+    inbound_query: entry.inboundQuery ? JSON.stringify(entry.inboundQuery) : undefined,
     inbound_headers: entry.inboundHeaders ? JSON.stringify(entry.inboundHeaders) : undefined,
     inbound_body: entry.inboundBody ? JSON.stringify(entry.inboundBody).slice(0, 2000) : undefined,
     status_code: entry.statusCode,

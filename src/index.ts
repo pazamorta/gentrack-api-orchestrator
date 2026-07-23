@@ -54,6 +54,7 @@ app.use((req, res) => {
     routeName: '[NO MATCH]',
     inboundMethod: req.method,
     inboundPath: req.path,
+    inboundQuery: req.query as Record<string, string>,
     inboundHeaders: req.headers as Record<string, string>,
     inboundBody: req.body,
     statusCode: 404,
