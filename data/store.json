@@ -2225,7 +2225,7 @@
       "name": "Post Validate Meter Reading",
       "logLevel": "debug",
       "method": "POST",
-      "path": "v1/service-points/:externalType/:externalId/validate-meter-readings",
+      "path": "v1/service-points/:externalType/:externalId/validate-meter-reads",
       "description": "Submit a meter reading for validation",
       "steps": [
         {
