@@ -163,8 +163,8 @@ export interface DatabaseConnection {
 export interface ResponseMapping {
   /** JSONPath expressions mapping step results into the final response body (supports nested objects) */
   body: Record<string, unknown>;
-  /** HTTP status code — fixed number or expression like "$steps.step-1.statusCode" */
-  statusCode?: number | string;
+  /** HTTP status code — fixed number, expression like "$steps.step-1.statusCode", or conditional object */
+  statusCode?: number | string | { $source: string; $when: number[]; $override: number };
   /** Response headers to set */
   headers?: Record<string, string>;
   /** Pass through a step's raw response (body + content-type) without JSON wrapping */
@@ -192,6 +192,8 @@ export interface RouteConfig {
   responseMapping: ResponseMapping;
   /** Log level for this route: 'none' | 'error' | 'info' | 'debug' */
   logLevel?: 'none' | 'error' | 'info' | 'debug';
+  /** When true, 4xx/5xx step results won't short-circuit — response mapping always runs */
+  suppressErrorPassthrough?: boolean;
 }
 
 /** Top-level orchestrator configuration (YAML file structure) */

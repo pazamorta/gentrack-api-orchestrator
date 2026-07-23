@@ -2227,6 +2227,7 @@
       "method": "POST",
       "path": "v1/service-points/:externalType/:externalId/validate-meter-reads",
       "description": "Submit a meter reading for validation",
+      "suppressErrorPassthrough": true,
       "steps": [
         {
           "type": "sequential",
@@ -2266,7 +2267,11 @@
         }
       ],
       "responseMapping": {
-        "statusCode": "200",
+        "statusCode": {
+          "$source": "$steps.step-1.statusCode",
+          "$when": [200, 204, 400],
+          "$override": 200
+        },
         "body": {
           "meters": {
             "$source": "$.inboundRequest.body.meters",

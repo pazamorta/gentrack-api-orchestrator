@@ -19,7 +19,7 @@ export async function executeOrchestration(
     await executeStep(step, backends, context, databases);
 
     // Check if any step in this group returned an error status (skip for forEach — collect all results)
-    if (step.type !== 'forEach') {
+    if (step.type !== 'forEach' && !route.suppressErrorPassthrough) {
       for (const call of step.calls) {
         const result = context.stepResults[call.stepId];
         if (result && result.statusCode >= 400) {
@@ -77,7 +77,7 @@ export async function executeOrchestration(
     ? stripNullValues(responseBody)
     : responseBody;
 
-  // Resolve status code — supports fixed number or expression like "$steps.step-1.statusCode"
+  // Resolve status code — supports fixed number, expression, or conditional override
   let statusCode = 200;
   const rawStatus = route.responseMapping.statusCode;
   if (typeof rawStatus === 'number') {
@@ -85,6 +85,16 @@ export async function executeOrchestration(
   } else if (typeof rawStatus === 'string') {
     const resolved = resolveValue(rawStatus, context);
     statusCode = typeof resolved === 'number' ? resolved : parseInt(String(resolved), 10) || 200;
+  } else if (typeof rawStatus === 'object' && rawStatus !== null) {
+    // Conditional: { "$override": 200, "$when": [200, 400], "$source": "$steps.step-1.statusCode" }
+    const override = (rawStatus as any).$override as number;
+    const whenCodes = (rawStatus as any).$when as number[];
+    const sourceExpr = (rawStatus as any).$source as string;
+    if (override && whenCodes && sourceExpr) {
+      const actualStatus = resolveValue(sourceExpr, context);
+      const actualCode = typeof actualStatus === 'number' ? actualStatus : parseInt(String(actualStatus), 10);
+      statusCode = whenCodes.includes(actualCode) ? override : actualCode;
+    }
   }
 
   const headers = route.responseMapping.headers || {};
