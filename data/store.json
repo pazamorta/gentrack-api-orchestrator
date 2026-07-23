@@ -2266,7 +2266,7 @@
         }
       ],
       "responseMapping": {
-        "statusCode": "$steps.step-1.statusCode",
+        "statusCode": "200",
         "body": {
           "meters": "$.inboundRequest.body.meters"
         }
