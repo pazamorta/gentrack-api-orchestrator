@@ -2289,7 +2289,7 @@
               "method": "POST",
               "path": "/meterPoints/meterPointIdentifier/{{$.inboundRequest.params.externalId}}/readings",
               "bodyTemplate": {
-                "validateOnly": true,
+                "validateOnly": false,
                 "ignoreWarnings": false,
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
