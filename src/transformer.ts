@@ -534,6 +534,54 @@ export function applyArrayMap(config: Record<string, unknown>, context: Orchestr
           continue;
         }
         setNestedValue(mapped, targetField, value);
+      } else if (typeof itemExpr === 'object' && itemExpr !== null && '$source' in (itemExpr as Record<string, unknown>) && '$sortBy' in (itemExpr as Record<string, unknown>) && !('$pick' in (itemExpr as Record<string, unknown>))) {
+        // Nested $source/$sortBy/$fields for sorting and picking first item from a cross-referenced array
+        const nestedConfig = itemExpr as Record<string, unknown>;
+        const nestedOriginalIdx = typeof key === 'number' ? key : index;
+        let nestedSourceExpr = nestedConfig['$source'] as string;
+        if (nestedSourceExpr.includes('[$$]')) {
+          nestedSourceExpr = nestedSourceExpr.replace(/\[\$\$\]/g, `[${nestedOriginalIdx}]`);
+        }
+        let nestedSource: unknown;
+        if (nestedSourceExpr.startsWith('$.')) {
+          const results = JSONPath({ path: nestedSourceExpr, json: item as object });
+          nestedSource = results.length === 1 ? results[0] : results.length === 0 ? undefined : results;
+        } else {
+          nestedSource = resolveValue(nestedSourceExpr, context);
+        }
+        let nestedItems: unknown[] = [];
+        if (Array.isArray(nestedSource)) {
+          nestedItems = [...nestedSource];
+        } else if (nestedSource !== null && typeof nestedSource === 'object') {
+          nestedItems = Object.values(nestedSource as Record<string, unknown>);
+        }
+        const sortBy = nestedConfig['$sortBy'] as string;
+        const order = (nestedConfig['$order'] as string) || 'desc';
+        const fields = nestedConfig['$fields'] as Record<string, unknown> | undefined;
+        // Sort
+        nestedItems.sort((a, b) => {
+          const aResults = JSONPath({ path: `$.${sortBy}`, json: a as object });
+          const bResults = JSONPath({ path: `$.${sortBy}`, json: b as object });
+          const aVal = aResults.length > 0 ? String(aResults[0]) : '';
+          const bVal = bResults.length > 0 ? String(bResults[0]) : '';
+          const cmp = aVal.localeCompare(bVal);
+          return order === 'desc' ? -cmp : cmp;
+        });
+        const firstItem = nestedItems[0] || null;
+        if (firstItem && fields) {
+          const picked: Record<string, unknown> = {};
+          for (const [fKey, fExpr] of Object.entries(fields)) {
+            if (typeof fExpr === 'string' && fExpr.startsWith('$.')) {
+              const r = JSONPath({ path: fExpr, json: firstItem as object });
+              picked[fKey] = r.length === 1 ? r[0] : undefined;
+            } else {
+              picked[fKey] = fExpr;
+            }
+          }
+          setNestedValue(mapped, targetField, picked);
+        } else {
+          setNestedValue(mapped, targetField, firstItem);
+        }
       } else if (typeof itemExpr === 'object' && itemExpr !== null && '$source' in (itemExpr as Record<string, unknown>) && '$pick' in (itemExpr as Record<string, unknown>)) {
         // Nested $source/$pick for sub-arrays within each item
         const nestedConfig = itemExpr as Record<string, unknown>;
