@@ -2336,7 +2336,7 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/customers/customerNumber/{{$.inboundRequest.query.primaryCustomer}}/accounts",
               "headers": {},
@@ -2351,9 +2351,18 @@
           "calls": [
             {
               "stepId": "step-2",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$item.number}}/bills",
+              "path": "/accounts/accountNumber/{{$item.number}}/transactions",
+              "headers": {},
+              "queryMapping": {},
+              "bodyMapping": {}
+            },
+            {
+              "stepId": "step-3",
+              "backendId": "gtcx-gcis",
+              "method": "GET",
+              "path": "/accounts/{{$item.parentAccountId}}",
               "headers": {},
               "queryMapping": {},
               "bodyMapping": {}
@@ -2364,7 +2373,6 @@
       "responseMapping": {
         "statusCode": "$steps.step-1.statusCode",
         "body": {
-          "debug": "$steps.step-1.body",
           "accounts": {
             "$source": "$steps.step-1.body.results",
             "$pick": {
@@ -2377,15 +2385,15 @@
                 "$sortBy": "acceptedDttm",
                 "$order": "desc",
                 "$fields": {
-                  "billId": "$.id",
-                  "type": "Statement",
-                  "issueDate": "$.issueDt",
-                  "grossAmount": "$.grossAmount",
-                  "currency": "$.currency",
-                  "finalBill": "$.final",
-                  "hasImage": true
+                  "balance": "$.accountBalance",
+                  "issueDate": "$.acceptedDttm",
+                  "dueDate": "$.dueDt"
                 }
-              }
+              },
+              "statementPreference.type.preferenceTypeId": "$.billingCycle",
+              "statementPreference.type.description": "$.billingCycle",
+              "statementPreference.independent": false,
+              "statementPreference.alignedTo": "$steps.step-3.body[$$].number"
             }
           }
         }
