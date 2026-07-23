@@ -15,6 +15,20 @@ router.all('*', (req: Request, res: Response) => {
   const mock = findBestMock(req.method, req.path);
 
   if (!mock) {
+    const duration = Date.now() - startTime;
+    console.log(`[mock] ⚠️  No mock matched: ${req.method} ${req.path}`);
+    logExecution({
+      routeId: 'unmatched-mock',
+      routeName: '[NO MATCH - MOCK]',
+      inboundMethod: req.method,
+      inboundPath: req.path,
+      inboundHeaders: req.headers as Record<string, string>,
+      inboundBody: req.body,
+      statusCode: 404,
+      durationMs: duration,
+      stepResults: {},
+      error: `No active mock configured for ${req.method} ${req.path}`,
+    });
     res.status(404).json({
       error: 'No active mock configured for this endpoint',
       method: req.method,
