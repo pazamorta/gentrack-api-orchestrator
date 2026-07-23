@@ -2242,7 +2242,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
@@ -2253,11 +2253,11 @@
                       },
                       "$format": "localDateTime"
                     },
-                    "sequenceType": "$.sequenceType",
+                    "sequenceType": "$.quality",
                     "source": "$.source",
                     "quality": "$.quality",
                     "cumulative": "$.reading",
-                    "description": "G2 Salesforce Service Package"
+                    "description": "Read submitted from G2 Salesforce Service Package"
                   }
                 }
               }
@@ -2294,7 +2294,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
@@ -2305,11 +2305,11 @@
                       },
                       "$format": "localDateTime"
                     },
-                    "sequenceType": "$.sequenceType",
+                    "sequenceType": "$.quality",
                     "source": "$.source",
                     "quality": "$.quality",
                     "cumulative": "$.reading",
-                    "description": "G2 Salesforce Service Package"
+                    "description": "Read submitted from G2 Salesforce Service Packagee"
                   }
                 }
               }
