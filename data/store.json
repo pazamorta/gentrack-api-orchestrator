@@ -2268,7 +2268,6 @@
       "responseMapping": {
         "statusCode": "$steps.step-1.statusCode",
         "body": {
-          "debug": "$steps.step-1.body",
           "meters": "$.inboundRequest.body.meters"
         }
       }
