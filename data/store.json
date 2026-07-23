@@ -2242,7 +2242,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
@@ -2294,7 +2294,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
