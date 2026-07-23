@@ -878,7 +878,7 @@
             "$source": "$steps.step-1.body.results",
             "$pick": {
               "billId": "$.id",
-              "billNumber": "$.number",
+              "billNumber": "$.id",
               "type": "Statement",
               "issueDate": "$.issueDt",
               "currency": "$.currency",
@@ -2227,7 +2227,6 @@
       "method": "POST",
       "path": "v1/service-points/:externalType/:externalId/validate-meter-reads",
       "description": "Submit a meter reading for validation",
-      "suppressErrorPassthrough": true,
       "steps": [
         {
           "type": "sequential",
@@ -2243,7 +2242,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
@@ -2267,43 +2266,9 @@
         }
       ],
       "responseMapping": {
-        "statusCode": {
-          "$source": "$steps.step-1.statusCode",
-          "$when": [200, 204, 400],
-          "$override": 200
-        },
+        "statusCode": "200",
         "body": {
-          "meters": {
-            "$source": "$.inboundRequest.body.meters",
-            "$pick": {
-              "serialNumber": "$.serialNumber",
-              "deviceId": "$.deviceId",
-              "assetTypeId": "$.assetTypeId",
-              "assetExternal": "$.assetExternal",
-              "readingRegisters": {
-                "$source": "$.readingRegisters",
-                "$pick": {
-                  "id": "$.id",
-                  "label": "$.label",
-                  "dials": "$.dials",
-                  "unitOfMeasure": "$.unitOfMeasure",
-                  "registerStatus": "$.registerStatus",
-                  "purpose": "$.purpose",
-                  "allowsReadingEntry": "$.allowsReadingEntry",
-                  "accumulatorType": "$.accumulatorType",
-                  "meterReadings": "$.meterReadings",
-                  "validationResponse": {
-                    "$source": "$steps.step-1.body.validationErrors",
-                    "$pick": {
-                      "validationCode": "$.errorDetail.errorCode",
-                      "validationStatus": "$.errorDetail.errorSeverity",
-                      "validationDescription": "$.errorDetail.errorDescription"
-                    }
-                  }
-                }
-              }
-            }
-          }
+          "meters": "$.inboundRequest.body.meters"
         }
       }
     },
@@ -2314,7 +2279,6 @@
       "method": "POST",
       "path": "v1/service-points/:externalType/:externalId/submit-meter-reads",
       "description": "Submit a meter reading for billing",
-      "suppressErrorPassthrough": true,
       "steps": [
         {
           "type": "sequential",
@@ -2330,7 +2294,7 @@
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
-                  "$source": "$.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
                   "$pick": {
                     "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
                     "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
@@ -2354,43 +2318,9 @@
         }
       ],
       "responseMapping": {
-        "statusCode": {
-          "$source": "$steps.step-1.statusCode",
-          "$when": [200, 204, 400],
-          "$override": 200
-        },
+        "statusCode": "200",
         "body": {
-          "meters": {
-            "$source": "$.inboundRequest.body.meters",
-            "$pick": {
-              "serialNumber": "$.serialNumber",
-              "deviceId": "$.deviceId",
-              "assetTypeId": "$.assetTypeId",
-              "assetExternal": "$.assetExternal",
-              "readingRegisters": {
-                "$source": "$.readingRegisters",
-                "$pick": {
-                  "id": "$.id",
-                  "label": "$.label",
-                  "dials": "$.dials",
-                  "unitOfMeasure": "$.unitOfMeasure",
-                  "registerStatus": "$.registerStatus",
-                  "purpose": "$.purpose",
-                  "allowsReadingEntry": "$.allowsReadingEntry",
-                  "accumulatorType": "$.accumulatorType",
-                  "meterReadings": "$.meterReadings",
-                  "validationResponse": {
-                    "$source": "$steps.step-1.body.validationErrors",
-                    "$pick": {
-                      "validationCode": "$.errorDetail.errorCode",
-                      "validationStatus": "$.errorDetail.errorSeverity",
-                      "validationDescription": "$.errorDetail.errorDescription"
-                    }
-                  }
-                }
-              }
-            }
-          }
+          "meters": "$.inboundRequest.body.meters"
         }
       }
     }
