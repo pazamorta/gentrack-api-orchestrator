@@ -2323,6 +2323,73 @@
           "meters": "$.inboundRequest.body.meters"
         }
       }
+    },
+    {
+      "id": "27472224-646b-4024-b870-40b2126b0de3",
+      "name": "GET Account Heirarchies",
+      "method": "GET",
+      "path": "v1/account-hierarchies",
+      "description": "Get the customer record from Junifer using the Global ID as the customer number",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "junifer-local",
+              "method": "GET",
+              "path": "/customers/customerNumber/{{$.inboundRequest.query.primaryCustomer}}/accounts",
+              "headers": {},
+              "queryMapping": {},
+              "bodyMapping": {}
+            }
+          ]
+        },
+        {
+          "type": "forEach",
+          "iterateOver": "$steps.step-1.body.results",
+          "calls": [
+            {
+              "stepId": "step-2",
+              "backendId": "junifer-local",
+              "method": "GET",
+              "path": "/accounts/accountNumber/{{$item.number}}/bills",
+              "headers": {},
+              "queryMapping": {},
+              "bodyMapping": {}
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": "$steps.step-1.statusCode",
+        "body": {
+          "debug": "$steps.step-1.body",
+          "accounts": {
+            "$source": "$steps.step-1.body.results",
+            "$pick": {
+              "globalId": "$.number",
+              "financialSummary.currency": "$.currency",
+              "financialSummary.balance": "$.balance",
+              "financialSummary.overdue": "$.overDueBalance",
+              "financialSummary.lastBill": {
+                "$source": "$steps.step-2.body[$$].results",
+                "$sortBy": "acceptedDttm",
+                "$order": "desc",
+                "$fields": {
+                  "billId": "$.id",
+                  "type": "Statement",
+                  "issueDate": "$.issueDt",
+                  "grossAmount": "$.grossAmount",
+                  "currency": "$.currency",
+                  "finalBill": "$.final",
+                  "hasImage": true
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "databases": [

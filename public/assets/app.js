@@ -671,23 +671,24 @@ async function viewLogEntry(id) {
   try {
     const res = await fetch(`${API_BASE}/logs/${id}`);
     const entry = await res.json();
+    const safeParse = (str) => { try { return str ? JSON.parse(str) : null; } catch { return str; } };
     const display = {
       route: entry.route_name || entry.route_id,
       timestamp: entry.created_at,
       method: entry.inbound_method,
       path: entry.inbound_path,
-      query: entry.inbound_query ? JSON.parse(entry.inbound_query) : null,
+      query: safeParse(entry.inbound_query),
       statusCode: entry.status_code,
       duration: `${entry.duration_ms}ms`,
       error: entry.error || null,
-      inboundHeaders: entry.inbound_headers ? JSON.parse(entry.inbound_headers) : null,
-      inboundBody: entry.inbound_body ? JSON.parse(entry.inbound_body) : null,
-      responseBody: entry.response_body ? JSON.parse(entry.response_body) : null,
-      stepResults: entry.step_results ? JSON.parse(entry.step_results) : null,
+      inboundHeaders: safeParse(entry.inbound_headers),
+      inboundBody: safeParse(entry.inbound_body),
+      responseBody: safeParse(entry.response_body),
+      stepResults: safeParse(entry.step_results),
     };
     openModalReadOnly(`Log: ${entry.inbound_method} ${entry.inbound_path}`, JSON.stringify(display, null, 2));
   } catch (err) {
-    alert('Failed to load log entry');
+    alert('Failed to load log entry: ' + err.message);
   }
 }
 
