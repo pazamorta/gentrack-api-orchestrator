@@ -2271,6 +2271,58 @@
           "meters": "$.inboundRequest.body.meters"
         }
       }
+    },
+    {
+      "id": "9bc2282e-097d-412e-94fa-3b5e6ed0fea5",
+      "name": "Post Submit Meter Reading",
+      "logLevel": "debug",
+      "method": "POST",
+      "path": "v1/service-points/:externalType/:externalId/submit-meter-reads",
+      "description": "Submit a meter reading for billing",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/meterPoints/meterPointIdentifier/{{$.inboundRequest.params.externalId}}/readings",
+              "bodyTemplate": {
+                "validateOnly": true,
+                "ignoreWarnings": false,
+                "submissionMode": "replace",
+                "suppressPublishToIndustry": false,
+                "readings": {
+                  "$source": "$context.inboundRequest.body.meters[0].readingRegisters[0].meterReadings",
+                  "$pick": {
+                    "meterIdentifier": "$context.inboundRequest.body.meters[0].serialNumber",
+                    "registerIdentifier": "$context.inboundRequest.body.meters[0].readingRegisters[0].label",
+                    "readingDttm": {
+                      "$date": "$.readingDateTime",
+                      "$dateAdd": {
+                        "days": 0
+                      },
+                      "$format": "localDateTime"
+                    },
+                    "sequenceType": "$.sequenceType",
+                    "source": "$.source",
+                    "quality": "$.quality",
+                    "cumulative": "$.reading",
+                    "description": "G2 Salesforce Service Package"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": "200",
+        "body": {
+          "meters": "$.inboundRequest.body.meters"
+        }
+      }
     }
   ],
   "databases": [
