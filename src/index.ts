@@ -45,6 +45,29 @@ app.use('/mock', mockRouter);
 // Proxy/orchestration handler — catches all other requests
 app.use('/api', proxyRouter);
 
+// Catch-all for unmatched requests at root level (no /api or /mock prefix)
+app.use((req, res) => {
+  const { logExecution } = require('./db');
+  console.log(`[app] ⚠️  Unmatched request: ${req.method} ${req.path}`);
+  logExecution({
+    routeId: 'unmatched',
+    routeName: '[NO MATCH]',
+    inboundMethod: req.method,
+    inboundPath: req.path,
+    inboundHeaders: req.headers as Record<string, string>,
+    inboundBody: req.body,
+    statusCode: 404,
+    durationMs: 0,
+    stepResults: {},
+    error: `No route configured for ${req.method} ${req.path}`,
+  });
+  res.status(404).json({
+    error: 'Not found',
+    method: req.method,
+    path: req.path,
+  });
+});
+
 // Start server
 async function start(): Promise<void> {
   // Initialize database
