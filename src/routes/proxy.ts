@@ -18,6 +18,20 @@ router.all('*', async (req: Request, res: Response) => {
   const matchedRoute = findMatchingRoute(routes, req.method, req.path);
 
   if (!matchedRoute) {
+    const duration = Date.now() - startTime;
+    console.log(`[proxy] ⚠️  No route matched: ${req.method} ${req.path}`);
+    logExecution({
+      routeId: 'unmatched',
+      routeName: '[NO MATCH]',
+      inboundMethod: req.method,
+      inboundPath: req.path,
+      inboundHeaders: req.headers as Record<string, string>,
+      inboundBody: req.body,
+      statusCode: 404,
+      durationMs: duration,
+      stepResults: {},
+      error: `No orchestration route configured for ${req.method} ${req.path}`,
+    });
     res.status(404).json({
       error: 'No orchestration route configured for this endpoint',
       method: req.method,
