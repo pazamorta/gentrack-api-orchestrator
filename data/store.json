@@ -2222,7 +2222,7 @@
     },
     {
       "id": "9bcf6961-a0ca-4162-8907-002a70a466d7",
-      "name": "Post Validate Meter Reading",
+      "name": "Post Validate Meter Reads",
       "logLevel": "debug",
       "method": "POST",
       "path": "v1/service-points/:externalType/:externalId/validate-meter-reads",
@@ -2274,7 +2274,7 @@
     },
     {
       "id": "9bc2282e-097d-412e-94fa-3b5e6ed0fea5",
-      "name": "Post Submit Meter Reading",
+      "name": "Post Submit Meter Reads",
       "logLevel": "debug",
       "method": "POST",
       "path": "v1/service-points/:externalType/:externalId/submit-meter-reads",
