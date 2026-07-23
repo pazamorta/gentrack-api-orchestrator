@@ -2387,7 +2387,10 @@
                 "$fields": {
                   "balance": "$.accountBalance",
                   "issueDate": "$.acceptedDttm",
-                  "dueDate": "$.dueDt"
+                  "dueDate": {
+                    "$date": "$.dueDt",
+                    "$datePart": "date"
+                  }
                 }
               },
               "statementPreference.type.preferenceTypeId": "$.billingCycle",

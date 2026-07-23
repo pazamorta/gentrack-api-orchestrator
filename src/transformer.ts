@@ -574,6 +574,17 @@ export function applyArrayMap(config: Record<string, unknown>, context: Orchestr
             if (typeof fExpr === 'string' && fExpr.startsWith('$.')) {
               const r = JSONPath({ path: fExpr, json: firstItem as object });
               picked[fKey] = r.length === 1 ? r[0] : undefined;
+            } else if (typeof fExpr === 'object' && fExpr !== null && '$date' in (fExpr as Record<string, unknown>) && '$datePart' in (fExpr as Record<string, unknown>)) {
+              // Support $datePart inside $fields
+              const dateConfig = fExpr as { $date: string; $datePart: string };
+              let dateValue: unknown;
+              if (dateConfig.$date.startsWith('$.')) {
+                const r = JSONPath({ path: dateConfig.$date, json: firstItem as object });
+                dateValue = r.length > 0 ? r[0] : undefined;
+              } else {
+                dateValue = dateConfig.$date;
+              }
+              picked[fKey] = extractDatePart(dateValue, dateConfig.$datePart);
             } else {
               picked[fKey] = fExpr;
             }
