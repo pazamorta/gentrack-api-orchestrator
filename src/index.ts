@@ -39,6 +39,8 @@ function basicAuth(req: Request, res: Response, next: NextFunction): void {
   // Check session cookie
   const cookie = req.headers.cookie;
   if (cookie && cookie.includes('orch_auth=valid')) {
+    // Refresh cookie on each request (sliding expiry - 30 minutes)
+    res.setHeader('Set-Cookie', 'orch_auth=valid; Path=/; HttpOnly; SameSite=Strict; Max-Age=1800');
     next();
     return;
   }
@@ -81,7 +83,7 @@ app.get('/favicon.ico', (_req, res) => {
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    res.setHeader('Set-Cookie', 'orch_auth=valid; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400');
+    res.setHeader('Set-Cookie', 'orch_auth=valid; Path=/; HttpOnly; SameSite=Strict; Max-Age=1800');
     res.json({ success: true });
   } else {
     res.status(401).json({ error: 'Invalid credentials' });
