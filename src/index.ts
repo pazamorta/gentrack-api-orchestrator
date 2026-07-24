@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import * as path from 'path';
 import { initDb } from './db';
 import { loadConfig } from './config-loader';
@@ -10,6 +10,28 @@ import { rateLimitMiddleware } from './rate-limiter';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
+
+// Admin credentials (configurable via env vars)
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'welcome';
+
+// Basic auth middleware for UI and admin routes
+function basicAuth(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const encoded = authHeader.split(' ')[1];
+    if (encoded) {
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      const [user, pass] = decoded.split(':');
+      if (user === ADMIN_USER && pass === ADMIN_PASS) {
+        next();
+        return;
+      }
+    }
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="API Orchestrator"');
+  res.status(401).send('Authentication required');
+}
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -37,12 +59,12 @@ app.get('/favicon.ico', (_req, res) => {
   res.redirect('/ui/favicon.png');
 });
 
-// Web UI (serves static files)
-app.use('/ui', express.static(path.resolve(__dirname, '../public')));
+// Web UI (serves static files — requires auth)
+app.use('/ui', basicAuth, express.static(path.resolve(__dirname, '../public')));
 app.get('/', (_req, res) => res.redirect('/ui'));
 
-// Admin API for managing backends and routes
-app.use('/admin', adminRouter);
+// Admin API for managing backends and routes — requires auth
+app.use('/admin', basicAuth, adminRouter);
 
 // Mock API — serves mocked responses for testing
 app.use('/mock', mockRouter);
