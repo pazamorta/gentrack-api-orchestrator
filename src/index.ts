@@ -17,6 +17,12 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'welcome';
 
 // Basic auth middleware for UI and admin routes
 function basicAuth(req: Request, res: Response, next: NextFunction): void {
+  // Allow login page and its assets without auth
+  if (req.path === '/login.html' || req.path === '/assets/style.css' || req.path === '/assets/mainLogo.png' || req.path === '/favicon.png') {
+    next();
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const encoded = authHeader.split(' ')[1];
@@ -29,8 +35,20 @@ function basicAuth(req: Request, res: Response, next: NextFunction): void {
       }
     }
   }
-  res.setHeader('WWW-Authenticate', 'Basic realm="API Orchestrator"');
-  res.status(401).send('Authentication required');
+
+  // Check session cookie
+  const cookie = req.headers.cookie;
+  if (cookie && cookie.includes('orch_auth=valid')) {
+    next();
+    return;
+  }
+
+  // Redirect to login page for browser requests, 401 for API requests
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    res.redirect('/ui/login.html');
+  } else {
+    res.status(401).json({ error: 'Authentication required' });
+  }
 }
 
 // Middleware
@@ -57,6 +75,23 @@ app.get('/health', (_req, res) => {
 // Favicon
 app.get('/favicon.ico', (_req, res) => {
   res.redirect('/ui/favicon.png');
+});
+
+// Login endpoint
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    res.setHeader('Set-Cookie', 'orch_auth=valid; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400');
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+// Logout endpoint
+app.post('/logout', (_req, res) => {
+  res.setHeader('Set-Cookie', 'orch_auth=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+  res.json({ success: true });
 });
 
 // Web UI (serves static files — requires auth)

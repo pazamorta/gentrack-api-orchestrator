@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — API Orchestrator</title>
+  <link rel="icon" type="image/png" href="/ui/favicon.png">
+  <link rel="stylesheet" href="/ui/assets/style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg-primary);
+    }
+    .login-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 40px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    .login-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      justify-content: center;
+    }
+    .login-header img {
+      height: 32px;
+    }
+    .login-header h1 {
+      font-size: 1.4rem;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    .login-field {
+      margin-bottom: 16px;
+    }
+    .login-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .login-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      background: var(--primary);
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .login-btn:hover {
+      opacity: 0.9;
+    }
+    .login-error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-header">
+      <img src="/ui/assets/mainLogo.png" alt="Logo">
+      <h1>API Orchestrator</h1>
+    </div>
+    <form id="login-form">
+      <div class="login-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" autofocus required>
+      </div>
+      <div class="login-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn">Sign In</button>
+      <p class="login-error" id="login-error">Invalid username or password</p>
+    </form>
+  </div>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('login-error');
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+          window.location.href = '/ui';
+        } else {
+          errorEl.style.display = 'block';
+        }
+      } catch {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
