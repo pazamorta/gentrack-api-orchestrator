@@ -32,6 +32,11 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Favicon
+app.get('/favicon.ico', (_req, res) => {
+  res.redirect('/ui/favicon.png');
+});
+
 // Web UI (serves static files)
 app.use('/ui', express.static(path.resolve(__dirname, '../public')));
 app.get('/', (_req, res) => res.redirect('/ui'));
