@@ -25,6 +25,7 @@
         <button class="nav-btn" data-tab="logs">Execution Logs</button>
         <button class="nav-btn" data-tab="audit">Audit</button>
         <button class="nav-btn" data-tab="test">Test</button>
+        <button class="nav-btn" data-tab="docs">Docs</button>
       </nav>
     </header>
 
@@ -169,6 +170,15 @@
             <pre id="test-response-body"></pre>
           </div>
         </div>
+      </section>
+
+      <!-- Docs Tab -->
+      <section id="tab-docs" class="tab-content">
+        <div class="section-header">
+          <h2>Documentation</h2>
+        </div>
+        <input type="text" class="search-bar" id="search-docs" placeholder="Search documentation...">
+        <div id="docs-results" style="padding: 20px; font-family: monospace; white-space: pre-wrap; line-height: 1.6; max-height: 70vh; overflow-y: auto;"></div>
       </section>
     </main>
 

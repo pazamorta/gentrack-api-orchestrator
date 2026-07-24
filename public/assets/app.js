@@ -85,6 +85,7 @@ function setupTabs() {
       // Load data on tab switch
       if (btn.dataset.tab === 'logs') loadLogs();
       if (btn.dataset.tab === 'audit') loadAudit();
+      if (btn.dataset.tab === 'docs') searchDocs('');
     });
   });
 
@@ -100,6 +101,13 @@ function setupTabs() {
   });
   document.getElementById('search-mocks').addEventListener('input', (e) => {
     filterCards('mocks-list', e.target.value);
+  });
+
+  // Docs search
+  let docsDebounce;
+  document.getElementById('search-docs').addEventListener('input', (e) => {
+    clearTimeout(docsDebounce);
+    docsDebounce = setTimeout(() => searchDocs(e.target.value), 300);
   });
 }
 
@@ -1167,3 +1175,58 @@ window.viewMock = viewMock;
 window.editMock = editMock;
 window.toggleMock = toggleMock;
 window.deleteMock = deleteMock;
+
+
+// ---- Documentation ----
+async function searchDocs(query) {
+  const container = document.getElementById('docs-results');
+  try {
+    const res = await fetch(`${API_BASE}/docs/search?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No results found.</p>';
+      return;
+    }
+
+    container.innerHTML = data.results.map((doc) => {
+      const matchesHtml = doc.matches.map((m) => {
+        const highlighted = query
+          ? m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>')
+          : formatMarkdown(m.text);
+        return `<div class="doc-match">${query ? `<span class="doc-line">Line ${m.line}</span>` : ''}${query ? `<pre>${highlighted}</pre>` : highlighted}</div>`;
+      }).join('');
+      return `
+        <div class="doc-section">
+          <h3 class="doc-title">${escapeHtml(doc.title)}</h3>
+          ${matchesHtml}
+        </div>
+      `;
+    }).join('<hr style="border-color: var(--border); margin: 20px 0;">');
+  } catch (err) {
+    container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
+  }
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatMarkdown(text) {
+  // Simple markdown rendering
+  return text
+    .replace(/^### (.+)$/gm, '<h4 style="margin: 12px 0 4px;">$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3 style="margin: 16px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2 style="margin: 20px 0 12px;">$1</h2>')
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background: var(--bg-secondary); padding: 12px; border-radius: 4px; overflow-x: auto;">$2</pre>')
+    .replace(/`([^`]+)`/g, '<code style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 3px;">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\|(.+)\|/g, (match) => {
+      const cells = match.split('|').filter(c => c.trim());
+      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '';
+      return '<div style="display: flex; gap: 16px;">' + cells.map(c => `<span style="flex: 1;">${c.trim()}</span>`).join('') + '</div>';
+    })
+    .replace(/^- (.+)$/gm, '<div style="padding-left: 16px;">• $1</div>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}

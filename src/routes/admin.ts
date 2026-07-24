@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from '../types';
 import * as db from '../db';
 
@@ -544,6 +546,65 @@ router.delete('/mocks/:id', (req: Request, res: Response) => {
     return;
   }
   res.json({ message: 'Mock deleted' });
+});
+
+// ============================================================
+// Documentation
+// ============================================================
+
+/** Search documentation files */
+router.get('/docs/search', (req: Request, res: Response) => {
+  const query = (req.query.q as string || '').toLowerCase().trim();
+  const docsDir = path.resolve(__dirname, '../../docs');
+
+  if (!fs.existsSync(docsDir)) {
+    res.json({ results: [] });
+    return;
+  }
+
+  const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md'));
+  const results: { file: string; title: string; matches: { line: number; text: string }[] }[] = [];
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
+    const lines = content.split('\n');
+    const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') || file;
+    const matches: { line: number; text: string }[] = [];
+
+    if (!query) {
+      // No query — return all content
+      results.push({ file, title, matches: [{ line: 0, text: content }] });
+    } else {
+      // Search for matching lines with context
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes(query)) {
+          const start = Math.max(0, i - 1);
+          const end = Math.min(lines.length - 1, i + 3);
+          const contextLines = lines.slice(start, end + 1).join('\n');
+          matches.push({ line: i + 1, text: contextLines });
+        }
+      }
+      if (matches.length > 0) {
+        results.push({ file, title, matches });
+      }
+    }
+  }
+
+  res.json({ results });
+});
+
+/** Get a single documentation file */
+router.get('/docs/:filename', (req: Request, res: Response) => {
+  const docsDir = path.resolve(__dirname, '../../docs');
+  const filePath = path.join(docsDir, req.params.filename);
+
+  if (!fs.existsSync(filePath) || !req.params.filename.endsWith('.md')) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8');
+  res.json({ filename: req.params.filename, content });
 });
 
 export default router;
