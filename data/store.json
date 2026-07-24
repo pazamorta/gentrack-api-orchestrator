@@ -2269,7 +2269,11 @@
       "responseMapping": {
         "statusCode": {
           "$source": "$steps.step-1.statusCode",
-          "$when": [200, 204, 400],
+          "$when": [
+            200,
+            204,
+            400
+          ],
           "$override": 200
         },
         "body": {
@@ -2326,7 +2330,7 @@
               "path": "/meterPoints/meterPointIdentifier/{{$.inboundRequest.params.externalId}}/readings",
               "bodyTemplate": {
                 "validateOnly": false,
-                "ignoreWarnings": false,
+                "ignoreWarnings": true,
                 "submissionMode": "replace",
                 "suppressPublishToIndustry": false,
                 "readings": {
@@ -2356,7 +2360,11 @@
       "responseMapping": {
         "statusCode": {
           "$source": "$steps.step-1.statusCode",
-          "$when": [200, 204, 400],
+          "$when": [
+            200,
+            204,
+            400
+          ],
           "$override": 200
         },
         "body": {
