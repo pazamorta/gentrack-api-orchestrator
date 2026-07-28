@@ -1214,7 +1214,6 @@ async function searchDocs(query) {
       // Build TOC from headings if not searching
       if (!query) {
         tocHtml += `<div class="toc-file-title">${escapeHtml(doc.title.replace(/^.*—\s*/, ''))}</div>`;
-        const headings = m.text ? [] : [];
         const lines = doc.matches[0]?.text?.split('\n') || [];
         lines.forEach((line) => {
           const h2Match = line.match(/^## (.+)$/);
