@@ -113,6 +113,20 @@ function setupTabs() {
     clearTimeout(docsDebounce);
     docsDebounce = setTimeout(() => searchDocs(e.target.value), 300);
   });
+
+  // Docs TOC click delegation
+  document.getElementById('docs-toc').addEventListener('click', (e) => {
+    const link = e.target.closest('a[data-target]');
+    if (!link) return;
+    e.preventDefault();
+    const targetId = link.getAttribute('data-target');
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('#docs-toc a').forEach(a => a.classList.remove('active'));
+      link.classList.add('active');
+    }
+  });
 }
 
 function filterCards(containerId, query) {
@@ -1232,20 +1246,6 @@ async function searchDocs(query) {
     toc.innerHTML = tocHtml;
     container.innerHTML = contentHtml;
 
-    // Attach click handlers to TOC links
-    toc.querySelectorAll('a[data-target]').forEach((link) => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const targetId = link.getAttribute('data-target');
-        const el = document.getElementById(targetId);
-        console.log('TOC click:', targetId, 'found:', !!el);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          toc.querySelectorAll('a').forEach(a => a.classList.remove('active'));
-          link.classList.add('active');
-        }
-      });
-    });
   } catch (err) {
     container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
     toc.innerHTML = '';
