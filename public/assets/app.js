@@ -1279,55 +1279,87 @@ function escapeRegex(str) {
 }
 
 function formatMarkdown(text) {
-  // Pre-process: extract tables as blocks first
-  let html = text;
+  // Split into lines and process blocks
+  const lines = text.split('\n');
+  let html = '';
+  let i = 0;
 
-  // Convert table blocks (consecutive | lines) into <table> HTML
-  html = html.replace(/(^\|.+\|$\n?)+/gm, (tableBlock) => {
-    const lines = tableBlock.trim().split('\n');
-    const rows = [];
-    let isFirst = true;
-    for (const line of lines) {
-      const cells = line.split('|').filter(c => c.trim());
-      // Skip separator rows
-      if (cells.every(c => c.trim().match(/^[-:]+$/))) continue;
-      if (isFirst) {
-        rows.push('<tr>' + cells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr>');
-        isFirst = false;
-      } else {
-        rows.push('<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>');
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Code blocks
+    if (line.startsWith('```')) {
+      let code = '';
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        code += lines[i] + '\n';
+        i++;
       }
+      i++; // skip closing ```
+      html += `<pre><code>${code}</code></pre>`;
+      continue;
     }
-    return '<table>' + rows.join('') + '</table>\n';
-  });
 
-  // Now process the rest
-  html = html
-    // Code blocks (must be before inline code)
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    // Images
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; border-radius: 8px; margin: 16px 0;">')
+    // Table block
+    if (line.startsWith('|') && line.endsWith('|')) {
+      let tableRows = [];
+      while (i < lines.length && lines[i].startsWith('|') && lines[i].endsWith('|')) {
+        const cells = lines[i].split('|').slice(1, -1);
+        // Skip separator rows
+        if (!cells.every(c => c.trim().match(/^[-:]+$/))) {
+          tableRows.push(cells.map(c => c.trim()));
+        }
+        i++;
+      }
+      if (tableRows.length > 0) {
+        html += '<table>';
+        html += '<tr>' + tableRows[0].map(c => `<th>${formatInline(c)}</th>`).join('') + '</tr>';
+        for (let r = 1; r < tableRows.length; r++) {
+          html += '<tr>' + tableRows[r].map(c => `<td>${formatInline(c)}</td>`).join('') + '</tr>';
+        }
+        html += '</table>';
+      }
+      continue;
+    }
+
     // Headers
-    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-    // Inline code
+    if (line.startsWith('### ')) { html += `<h4>${formatInline(line.slice(4))}</h4>`; i++; continue; }
+    if (line.startsWith('## ')) { html += `<h3>${formatInline(line.slice(3))}</h3>`; i++; continue; }
+    if (line.startsWith('# ')) { html += `<h2>${formatInline(line.slice(2))}</h2>`; i++; continue; }
+
+    // Images
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgMatch) { html += `<img src="${imgMatch[2]}" alt="${imgMatch[1]}" style="max-width: 100%; border-radius: 8px; margin: 16px 0;">`; i++; continue; }
+
+    // Horizontal rule
+    if (line.trim() === '---') { html += '<hr>'; i++; continue; }
+
+    // Unordered list
+    if (line.startsWith('- ')) {
+      html += '<ul>';
+      while (i < lines.length && lines[i].startsWith('- ')) {
+        html += `<li>${formatInline(lines[i].slice(2))}</li>`;
+        i++;
+      }
+      html += '</ul>';
+      continue;
+    }
+
+    // Empty line = paragraph break
+    if (line.trim() === '') { html += '<br>'; i++; continue; }
+
+    // Regular text
+    html += `<p>${formatInline(line)}</p>`;
+    i++;
+  }
+
+  return html;
+}
+
+function formatInline(text) {
+  return text
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Bold
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    // Unordered lists
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // Horizontal rules
-    .replace(/^---$/gm, '<hr>');
-
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
-
-  // Convert remaining newlines
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = html.replace(/\n/g, '<br>');
-
-  return `<p>${html}</p>`;
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
 
