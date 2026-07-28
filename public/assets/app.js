@@ -1198,7 +1198,7 @@ async function searchDocs(query) {
         const highlighted = query
           ? m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>')
           : formatMarkdown(m.text);
-        return `<div class="doc-match">${query ? `<span class="doc-line">Line ${m.line}</span>` : ''}${query ? `<pre>${highlighted}</pre>` : highlighted}</div>`;
+        return `<div class="doc-match">${query ? `<span class="doc-line">Line ${m.line}</span><pre>${highlighted}</pre>` : highlighted}</div>`;
       }).join('');
       return `
         <div class="doc-section">
@@ -1206,7 +1206,7 @@ async function searchDocs(query) {
           ${matchesHtml}
         </div>
       `;
-    }).join('<hr style="border-color: var(--border); margin: 20px 0;">');
+    }).join('<hr>');
   } catch (err) {
     container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
   }
@@ -1217,20 +1217,40 @@ function escapeRegex(str) {
 }
 
 function formatMarkdown(text) {
-  // Simple markdown rendering
-  return text
-    .replace(/^### (.+)$/gm, '<h4 style="margin: 12px 0 4px;">$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3 style="margin: 16px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2 style="margin: 20px 0 12px;">$1</h2>')
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background: var(--bg-secondary); padding: 12px; border-radius: 4px; overflow-x: auto;">$2</pre>')
-    .replace(/`([^`]+)`/g, '<code style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 3px;">$1</code>')
+  // Convert markdown to HTML using app styles
+  let html = text
+    // Code blocks (must be before inline code)
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    // Headers
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\|(.+)\|/g, (match) => {
+    // Tables
+    .replace(/^\|(.+)\|$/gm, (match) => {
       const cells = match.split('|').filter(c => c.trim());
       if (cells.every(c => c.trim().match(/^[-:]+$/))) return '';
-      return '<div style="display: flex; gap: 16px;">' + cells.map(c => `<span style="flex: 1;">${c.trim()}</span>`).join('') + '</div>';
+      const isHeader = cells.every(c => c.trim().match(/^[-:]+$/) === null);
+      const tag = 'td';
+      return '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
     })
-    .replace(/^- (.+)$/gm, '<div style="padding-left: 16px;">• $1</div>')
-    .replace(/\n\n/g, '<br><br>')
-    .replace(/\n/g, '<br>');
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // Horizontal rules
+    .replace(/^---$/gm, '<hr>');
+
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
+
+  // Wrap consecutive <tr> in <table>
+  html = html.replace(/(<tr>.*?<\/tr>\n?)+/g, '<table>$&</table>');
+
+  // Convert remaining newlines
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }

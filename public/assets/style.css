@@ -590,3 +590,121 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Documentation */
+.docs-container {
+  padding: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
+  line-height: 1.7;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.docs-container h2 {
+  font-size: 1.5rem;
+  margin: 24px 0 12px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.docs-container h3 {
+  font-size: 1.2rem;
+  margin: 20px 0 8px;
+  color: var(--text);
+}
+
+.docs-container h4 {
+  font-size: 1rem;
+  margin: 16px 0 6px;
+  color: var(--text-muted);
+}
+
+.docs-container pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  margin: 8px 0 16px;
+}
+
+.docs-container code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+.docs-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+
+.docs-container th,
+.docs-container td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.docs-container th {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.docs-container tr:hover td {
+  background: var(--surface-hover);
+}
+
+.docs-container ul,
+.docs-container ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+.docs-container li {
+  margin: 4px 0;
+}
+
+.docs-container mark {
+  background: var(--warning);
+  color: var(--bg);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.docs-container hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+.doc-section {
+  margin-bottom: 16px;
+}
+
+.doc-title {
+  color: var(--primary);
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.doc-match {
+  margin: 8px 0;
+}
+
+.doc-line {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-right: 8px;
+}
