@@ -1316,3 +1316,15 @@ function formatMarkdown(text) {
 
   return `<p>${html}</p>`;
 }
+
+
+// ---- Session check ----
+// Intercept all fetch calls — if we get a 401, redirect to login
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  const response = await originalFetch.apply(this, args);
+  if (response.status === 401) {
+    window.location.href = '/ui/login.html';
+  }
+  return response;
+};
