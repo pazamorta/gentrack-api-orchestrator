@@ -46,7 +46,7 @@
 
   <!-- Data store -->
   <rect x="175" y="280" width="460" height="20" fill="none" stroke="none"/>
-  <text x="400" y="295" text-anchor="middle" fill="#8b949e" font-size="10">store.json • logs.json • Config-driven routing</text>
+  <text x="400" y="295" text-anchor="middle" fill="#8b949e" font-size="10">Config-driven routing with full logging, audit and rollback</text>
 
   <!-- Arrows down to backends -->
   <path d="M250 310 L250 350" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
