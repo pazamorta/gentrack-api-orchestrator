@@ -55,6 +55,10 @@ export function resolveValue(expression: string, context: OrchestrationContext):
 
     // Use JSONPath on the step result
     const results = JSONPath({ path: `$.${subPath}`, json: stepResult as object });
+    // If the expression uses array wildcards [*], always return as array
+    if (subPath.includes('[*]')) {
+      return results;
+    }
     return results.length === 1 ? results[0] : results.length === 0 ? undefined : results;
   }
 
