@@ -13,34 +13,6 @@ The API Orchestrator is a lightweight middleware that sits between frontend cons
 
 ![Architecture Diagram](/ui/assets/architecture-diagram.svg)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    CONSUMERS                                 │
-│  Salesforce CRM  │  Postman  │  Other Integrations          │
-└────────┬────────────────┬────────────────┬──────────────────┘
-         │                │                │
-         └────────────────┴────────────────┘
-                          │
-              ┌───────────▼───────────┐
-              │   API Orchestrator    │
-              │   (Express + Node.js) │
-              ├───────────────────────┤
-              │                       │
-              │  /api/*  → Proxy      │  Orchestrates multi-step flows
-              │  /mock/* → Mock       │  Serves mock responses
-              │  /admin  → Admin API  │  Configuration CRUD
-              │  /ui     → Web UI     │  Dashboard for management
-              │                       │
-              └───────────┬───────────┘
-                          │
-         ┌────────────────┼────────────────┐
-         │                │                │
-┌────────▼──────┐ ┌──────▼───────┐ ┌──────▼───────┐
-│  Backend A    │ │  Backend B   │ │  Backend C   │
-│  (GCIS/UAPI) │ │  (Junifer)   │ │  (Other)     │
-└───────────────┘ └──────────────┘ └──────────────┘
-```
-
 ## Core Components
 
 ### 1. Express Server (`src/index.ts`)
