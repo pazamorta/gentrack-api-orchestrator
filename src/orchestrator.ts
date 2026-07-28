@@ -304,6 +304,11 @@ async function iterateItems(
         existing.statusCode = 500;
       }
     }
+
+    // Throttle between iterations if configured (default 50ms for forEach with many items)
+    if (step.throttleMs || items.length > 5) {
+      await new Promise(resolve => setTimeout(resolve, step.throttleMs || 50));
+    }
   }
 
   // Clean up loop variables

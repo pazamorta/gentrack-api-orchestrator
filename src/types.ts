@@ -122,6 +122,8 @@ export interface OrchestrationStep {
   itemVariable?: string;
   /** For forEach: only process items where this expression resolves to a truthy value */
   filter?: string;
+  /** For forEach: delay in ms between iterations to avoid rate limiting (default 50ms when >5 items) */
+  throttleMs?: number;
   /** For database/procedure steps */
   database?: DatabaseStepConfig;
 }
