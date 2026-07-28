@@ -115,6 +115,7 @@
         {
           "type": "forEach",
           "iterateOver": "$steps.get-meterpoints.body[*].results[*]",
+          "filter": "$item.links.meterStructure",
           "calls": [
             {
               "stepId": "get-meterpoints-structure",
