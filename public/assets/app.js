@@ -1239,7 +1239,10 @@ async function searchDocs(query) {
         const targetId = link.getAttribute('data-target');
         const el = document.getElementById(targetId);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Scroll the docs container, not the page
+          const docsContainer = document.getElementById('docs-results');
+          const offset = el.offsetTop - docsContainer.offsetTop;
+          docsContainer.scrollTo({ top: offset, behavior: 'smooth' });
           toc.querySelectorAll('a').forEach(a => a.classList.remove('active'));
           link.classList.add('active');
         }

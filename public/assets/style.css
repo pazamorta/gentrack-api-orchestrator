@@ -600,6 +600,8 @@ tr:hover td {
   line-height: 1.7;
   color: var(--text);
   font-family: var(--font);
+  flex: 1;
+  position: relative;
 }
 
 .docs-container h2 {
