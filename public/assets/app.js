@@ -1301,10 +1301,10 @@ function formatMarkdown(text) {
     }
 
     // Table block
-    if (line.startsWith('|') && line.endsWith('|')) {
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
       let tableRows = [];
-      while (i < lines.length && lines[i].startsWith('|') && lines[i].endsWith('|')) {
-        const cells = lines[i].split('|').slice(1, -1);
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        const cells = lines[i].trim().split('|').slice(1, -1);
         // Skip separator rows
         if (!cells.every(c => c.trim().match(/^[-:]+$/))) {
           tableRows.push(cells.map(c => c.trim()));
