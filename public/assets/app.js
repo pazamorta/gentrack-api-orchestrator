@@ -1220,10 +1220,10 @@ async function searchDocs(query) {
           const h3Match = line.match(/^### (.+)$/);
           if (h2Match) {
             const id = `doc-${slugify(doc.file)}-${slugify(h2Match[1])}`;
-            tocHtml += `<a href="#${id}" class="toc-h2" onclick="scrollToDoc('${id}')">${h2Match[1]}</a>`;
+            tocHtml += `<a href="javascript:void(0)" class="toc-h2" data-target="${id}">${h2Match[1]}</a>`;
           } else if (h3Match) {
             const id = `doc-${slugify(doc.file)}-${slugify(h3Match[1])}`;
-            tocHtml += `<a href="#${id}" class="toc-h3" onclick="scrollToDoc('${id}')">${h3Match[1]}</a>`;
+            tocHtml += `<a href="javascript:void(0)" class="toc-h3" data-target="${id}">${h3Match[1]}</a>`;
           }
         });
       }
@@ -1231,6 +1231,20 @@ async function searchDocs(query) {
 
     toc.innerHTML = tocHtml;
     container.innerHTML = contentHtml;
+
+    // Attach click handlers to TOC links
+    toc.querySelectorAll('a[data-target]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('data-target');
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          toc.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    });
   } catch (err) {
     container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
     toc.innerHTML = '';
