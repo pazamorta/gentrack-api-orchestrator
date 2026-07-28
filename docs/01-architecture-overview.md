@@ -11,6 +11,8 @@ The API Orchestrator is a lightweight middleware that sits between frontend cons
 
 ## System Architecture
 
+![Architecture Diagram](/ui/assets/architecture-diagram.svg)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    CONSUMERS                                 │
