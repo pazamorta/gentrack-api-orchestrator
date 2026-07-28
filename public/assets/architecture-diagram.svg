@@ -58,13 +58,13 @@
   <text x="400" y="370" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600">BACKEND SYSTEMS</text>
 
   <rect x="120" y="380" width="160" height="24" fill="#232d36" stroke="#3fb950" rx="4"/>
-  <text x="200" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">GCIS / Unified API</text>
+  <text x="200" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">System A</text>
 
   <rect x="320" y="380" width="160" height="24" fill="#232d36" stroke="#d29922" rx="4"/>
-  <text x="400" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">Junifer (Local)</text>
+  <text x="400" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">System B</text>
 
   <rect x="520" y="380" width="160" height="24" fill="#232d36" stroke="#8b949e" rx="4"/>
-  <text x="600" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">Other Systems</text>
+  <text x="600" y="396" text-anchor="middle" fill="#e6edf3" font-size="11">System (n)</text>
 
   <!-- Features bar -->
   <rect x="80" y="440" width="640" height="60" fill="#1a2027" stroke="#2d3a45" rx="6"/>
