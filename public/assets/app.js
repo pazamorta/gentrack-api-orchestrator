@@ -1238,11 +1238,9 @@ async function searchDocs(query) {
         e.preventDefault();
         const targetId = link.getAttribute('data-target');
         const el = document.getElementById(targetId);
+        console.log('TOC click:', targetId, 'found:', !!el);
         if (el) {
-          // Scroll the docs container, not the page
-          const docsContainer = document.getElementById('docs-results');
-          const offset = el.offsetTop - docsContainer.offsetTop;
-          docsContainer.scrollTo({ top: offset, behavior: 'smooth' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           toc.querySelectorAll('a').forEach(a => a.classList.remove('active'));
           link.classList.add('active');
         }
