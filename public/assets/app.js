@@ -1294,12 +1294,11 @@ function formatMarkdown(text) {
     // Bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     // Tables
-    .replace(/^\|(.+)\|$/gm, (match) => {
+    .replace(/^\|(.+)\|$/gm, (match, _, offset) => {
       const cells = match.split('|').filter(c => c.trim());
-      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '';
-      const isHeader = cells.every(c => c.trim().match(/^[-:]+$/) === null);
-      const tag = 'td';
-      return '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+      // Skip separator rows
+      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '<!--table-sep-->';
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
     })
     // Unordered lists
     .replace(/^- (.+)$/gm, '<li>$1</li>')
@@ -1309,8 +1308,16 @@ function formatMarkdown(text) {
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
 
-  // Wrap consecutive <tr> in <table>
-  html = html.replace(/(<tr>.*?<\/tr>\n?)+/g, '<table>$&</table>');
+  // Wrap consecutive <tr> in <table>, make first row headers
+  html = html.replace(/<!--table-sep-->\n?/g, '');
+  html = html.replace(/((<tr>.*?<\/tr>\n?)+)/g, (block) => {
+    const rows = block.trim().split('\n').filter(r => r.trim());
+    if (rows.length > 0) {
+      // Convert first row td to th
+      rows[0] = rows[0].replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>');
+    }
+    return '<table>' + rows.join('') + '</table>';
+  });
 
   // Convert remaining newlines
   html = html.replace(/\n\n/g, '</p><p>');
