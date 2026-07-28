@@ -1279,8 +1279,30 @@ function escapeRegex(str) {
 }
 
 function formatMarkdown(text) {
-  // Convert markdown to HTML using app styles
-  let html = text
+  // Pre-process: extract tables as blocks first
+  let html = text;
+
+  // Convert table blocks (consecutive | lines) into <table> HTML
+  html = html.replace(/(^\|.+\|$\n?)+/gm, (tableBlock) => {
+    const lines = tableBlock.trim().split('\n');
+    const rows = [];
+    let isFirst = true;
+    for (const line of lines) {
+      const cells = line.split('|').filter(c => c.trim());
+      // Skip separator rows
+      if (cells.every(c => c.trim().match(/^[-:]+$/))) continue;
+      if (isFirst) {
+        rows.push('<tr>' + cells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr>');
+        isFirst = false;
+      } else {
+        rows.push('<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>');
+      }
+    }
+    return '<table>' + rows.join('') + '</table>\n';
+  });
+
+  // Now process the rest
+  html = html
     // Code blocks (must be before inline code)
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
     // Images
@@ -1293,13 +1315,6 @@ function formatMarkdown(text) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     // Bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    // Tables
-    .replace(/^\|(.+)\|$/gm, (match, _, offset) => {
-      const cells = match.split('|').filter(c => c.trim());
-      // Skip separator rows
-      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '<!--table-sep-->';
-      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
-    })
     // Unordered lists
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     // Horizontal rules
@@ -1307,17 +1322,6 @@ function formatMarkdown(text) {
 
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
-
-  // Wrap consecutive <tr> in <table>, make first row headers
-  html = html.replace(/<!--table-sep-->\n?/g, '');
-  html = html.replace(/((<tr>.*?<\/tr>\n?)+)/g, (block) => {
-    const rows = block.trim().split('\n').filter(r => r.trim());
-    if (rows.length > 0) {
-      // Convert first row td to th
-      rows[0] = rows[0].replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>');
-    }
-    return '<table>' + rows.join('') + '</table>';
-  });
 
   // Convert remaining newlines
   html = html.replace(/\n\n/g, '</p><p>');
