@@ -1184,32 +1184,99 @@ window.deleteMock = deleteMock;
 // ---- Documentation ----
 async function searchDocs(query) {
   const container = document.getElementById('docs-results');
+  const toc = document.getElementById('docs-toc');
   try {
     const res = await fetch(`${API_BASE}/docs/search?q=${encodeURIComponent(query)}`);
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
       container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No results found.</p>';
+      toc.innerHTML = '';
       return;
     }
 
-    container.innerHTML = data.results.map((doc) => {
+    // Build content and TOC
+    let tocHtml = '';
+    let contentHtml = '';
+
+    data.results.forEach((doc) => {
       const matchesHtml = doc.matches.map((m) => {
-        const highlighted = query
-          ? m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>')
-          : formatMarkdown(m.text);
-        return `<div class="doc-match">${query ? `<span class="doc-line">Line ${m.line}</span><pre>${highlighted}</pre>` : highlighted}</div>`;
+        if (query) {
+          const highlighted = m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>');
+          return `<div class="doc-match"><span class="doc-line">Line ${m.line}</span><pre>${highlighted}</pre></div>`;
+        } else {
+          return `<div class="doc-match">${formatMarkdownWithIds(m.text, doc.file)}</div>`;
+        }
       }).join('');
-      return `
-        <div class="doc-section">
-          <h3 class="doc-title">${escapeHtml(doc.title)}</h3>
-          ${matchesHtml}
-        </div>
-      `;
-    }).join('<hr>');
+
+      contentHtml += `<div class="doc-section"><h3 class="doc-title" id="doc-${slugify(doc.title)}">${escapeHtml(doc.title)}</h3>${matchesHtml}</div><hr>`;
+
+      // Build TOC from headings if not searching
+      if (!query) {
+        tocHtml += `<div class="toc-file-title">${escapeHtml(doc.title.replace(/^.*—\s*/, ''))}</div>`;
+        const headings = m.text ? [] : [];
+        const lines = doc.matches[0]?.text?.split('\n') || [];
+        lines.forEach((line) => {
+          const h2Match = line.match(/^## (.+)$/);
+          const h3Match = line.match(/^### (.+)$/);
+          if (h2Match) {
+            const id = `doc-${slugify(doc.file)}-${slugify(h2Match[1])}`;
+            tocHtml += `<a href="#${id}" class="toc-h2" onclick="scrollToDoc('${id}')">${h2Match[1]}</a>`;
+          } else if (h3Match) {
+            const id = `doc-${slugify(doc.file)}-${slugify(h3Match[1])}`;
+            tocHtml += `<a href="#${id}" class="toc-h3" onclick="scrollToDoc('${id}')">${h3Match[1]}</a>`;
+          }
+        });
+      }
+    });
+
+    toc.innerHTML = tocHtml;
+    container.innerHTML = contentHtml;
   } catch (err) {
     container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
+    toc.innerHTML = '';
   }
+}
+
+function scrollToDoc(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Highlight active TOC item
+    document.querySelectorAll('.docs-sidebar a').forEach(a => a.classList.remove('active'));
+    const link = document.querySelector(`.docs-sidebar a[href="#${id}"]`);
+    if (link) link.classList.add('active');
+  }
+  return false;
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function formatMarkdownWithIds(text, filePrefix) {
+  // Same as formatMarkdown but adds IDs to headings for TOC linking
+  let html = text
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/^### (.+)$/gm, (_, title) => `<h4 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h4>`)
+    .replace(/^## (.+)$/gm, (_, title) => `<h3 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h3>`)
+    .replace(/^# (.+)$/gm, (_, title) => `<h2 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h2>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/^\|(.+)\|$/gm, (match) => {
+      const cells = match.split('|').filter(c => c.trim());
+      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '';
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    })
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^---$/gm, '<hr>');
+
+  html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
+  html = html.replace(/(<tr>.*?<\/tr>\n?)+/g, '<table>$&</table>');
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }
 
 function escapeRegex(str) {
