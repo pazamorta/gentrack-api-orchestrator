@@ -86,10 +86,13 @@ function setupTabs() {
       document.querySelectorAll('.tab-content').forEach((t) => t.classList.remove('active'));
       document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
 
+      // Update URL hash
+      window.history.replaceState(null, '', `#${btn.dataset.tab}`);
+
       // Load data on tab switch
       if (btn.dataset.tab === 'logs') loadLogs();
       if (btn.dataset.tab === 'audit') loadAudit();
-      if (btn.dataset.tab === 'docs') searchDocs('');
+      if (btn.dataset.tab === 'docs') loadDocsIndex();
     });
   });
 
@@ -114,19 +117,14 @@ function setupTabs() {
     docsDebounce = setTimeout(() => searchDocs(e.target.value), 300);
   });
 
-  // Docs TOC click delegation
-  document.getElementById('docs-toc').addEventListener('click', (e) => {
-    const link = e.target.closest('a[data-target]');
-    if (!link) return;
-    e.preventDefault();
-    const targetId = link.getAttribute('data-target');
-    const el = document.getElementById(targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      document.querySelectorAll('#docs-toc a').forEach(a => a.classList.remove('active'));
-      link.classList.add('active');
-    }
-  });
+  // URL-based tab routing
+  function activateTabFromHash() {
+    const hash = window.location.hash.replace('#', '') || 'backends';
+    const btn = document.querySelector(`.nav-btn[data-tab="${hash}"]`);
+    if (btn) btn.click();
+  }
+  window.addEventListener('hashchange', activateTabFromHash);
+  activateTabFromHash();
 }
 
 function filterCards(containerId, query) {
@@ -1196,101 +1194,84 @@ window.deleteMock = deleteMock;
 
 
 // ---- Documentation ----
-async function searchDocs(query) {
+async function loadDocsIndex() {
   const container = document.getElementById('docs-results');
-  const toc = document.getElementById('docs-toc');
+  try {
+    const res = await fetch(`${API_BASE}/docs/search?q=`);
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No documentation found.</p>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="card-list">
+        ${data.results.map((doc) => `
+          <div class="card" style="cursor: pointer;" onclick="viewDoc('${doc.file}')">
+            <div class="card-info">
+              <h4>${escapeHtml(doc.title)}</h4>
+              <p>${escapeHtml(doc.file)}</p>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewDoc('${doc.file}')">View</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
+  }
+}
+
+async function viewDoc(filename) {
+  const container = document.getElementById('docs-results');
+  try {
+    const res = await fetch(`${API_BASE}/docs/${filename}`);
+    const data = await res.json();
+
+    container.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadDocsIndex()">← Back to docs</button>
+      </div>
+      <div class="docs-content">${formatMarkdown(data.content)}</div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<p style="color: var(--danger);">Failed to load document.</p>';
+  }
+}
+
+async function searchDocs(query) {
+  if (!query) {
+    loadDocsIndex();
+    return;
+  }
+  const container = document.getElementById('docs-results');
   try {
     const res = await fetch(`${API_BASE}/docs/search?q=${encodeURIComponent(query)}`);
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
       container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No results found.</p>';
-      toc.innerHTML = '';
       return;
     }
 
-    // Build content and TOC
-    let tocHtml = '';
-    let contentHtml = '';
-
-    data.results.forEach((doc) => {
+    container.innerHTML = data.results.map((doc) => {
       const matchesHtml = doc.matches.map((m) => {
-        if (query) {
-          const highlighted = m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>');
-          return `<div class="doc-match"><span class="doc-line">Line ${m.line}</span><pre>${highlighted}</pre></div>`;
-        } else {
-          return `<div class="doc-match">${formatMarkdownWithIds(m.text, doc.file)}</div>`;
-        }
+        const highlighted = m.text.replace(new RegExp(`(${escapeRegex(query)})`, 'gi'), '<mark>$1</mark>');
+        return `<div class="doc-match"><span class="doc-line">Line ${m.line}</span><pre>${highlighted}</pre></div>`;
       }).join('');
-
-      contentHtml += `<div class="doc-section"><h3 class="doc-title" id="doc-${slugify(doc.title)}">${escapeHtml(doc.title)}</h3>${matchesHtml}</div><hr>`;
-
-      // Build TOC from headings if not searching
-      if (!query) {
-        tocHtml += `<div class="toc-file-title">${escapeHtml(doc.title.replace(/^.*—\s*/, ''))}</div>`;
-        const lines = doc.matches[0]?.text?.split('\n') || [];
-        lines.forEach((line) => {
-          const h2Match = line.match(/^## (.+)$/);
-          const h3Match = line.match(/^### (.+)$/);
-          if (h2Match) {
-            const id = `doc-${slugify(doc.file)}-${slugify(h2Match[1])}`;
-            tocHtml += `<a href="javascript:void(0)" class="toc-h2" data-target="${id}">${h2Match[1]}</a>`;
-          } else if (h3Match) {
-            const id = `doc-${slugify(doc.file)}-${slugify(h3Match[1])}`;
-            tocHtml += `<a href="javascript:void(0)" class="toc-h3" data-target="${id}">${h3Match[1]}</a>`;
-          }
-        });
-      }
-    });
-
-    toc.innerHTML = tocHtml;
-    container.innerHTML = contentHtml;
-
+      return `
+        <div class="doc-section">
+          <h3 class="doc-title" style="cursor: pointer;" onclick="viewDoc('${doc.file}')">${escapeHtml(doc.title)}</h3>
+          ${matchesHtml}
+        </div>
+      `;
+    }).join('<hr>');
   } catch (err) {
     container.innerHTML = '<p style="color: var(--danger);">Failed to load documentation.</p>';
-    toc.innerHTML = '';
   }
-}
-
-function scrollToDoc(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Highlight active TOC item
-    document.querySelectorAll('.docs-sidebar a').forEach(a => a.classList.remove('active'));
-    const link = document.querySelector(`.docs-sidebar a[href="#${id}"]`);
-    if (link) link.classList.add('active');
-  }
-  return false;
-}
-
-function slugify(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-function formatMarkdownWithIds(text, filePrefix) {
-  // Same as formatMarkdown but adds IDs to headings for TOC linking
-  let html = text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/^### (.+)$/gm, (_, title) => `<h4 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h4>`)
-    .replace(/^## (.+)$/gm, (_, title) => `<h3 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h3>`)
-    .replace(/^# (.+)$/gm, (_, title) => `<h2 id="doc-${slugify(filePrefix)}-${slugify(title)}">${title}</h2>`)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/^\|(.+)\|$/gm, (match) => {
-      const cells = match.split('|').filter(c => c.trim());
-      if (cells.every(c => c.trim().match(/^[-:]+$/))) return '';
-      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
-    })
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^---$/gm, '<hr>');
-
-  html = html.replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
-  html = html.replace(/(<tr>.*?<\/tr>\n?)+/g, '<table>$&</table>');
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = html.replace(/\n/g, '<br>');
-
-  return `<p>${html}</p>`;
 }
 
 function escapeRegex(str) {
