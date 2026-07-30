@@ -1280,7 +1280,7 @@ function escapeRegex(str) {
 
 function formatMarkdown(text) {
   // Split into lines and process blocks
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   let html = '';
   let i = 0;
 
@@ -1328,7 +1328,7 @@ function formatMarkdown(text) {
     if (line.startsWith('# ')) { html += `<h2>${formatInline(line.slice(2))}</h2>`; i++; continue; }
 
     // Images
-    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    const imgMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (imgMatch) { html += `<img src="${imgMatch[2]}" alt="${imgMatch[1]}" style="max-width: 100%; border-radius: 8px; margin: 16px 0;">`; i++; continue; }
 
     // Horizontal rule
