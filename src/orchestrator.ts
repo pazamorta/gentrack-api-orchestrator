@@ -5,6 +5,38 @@ import * as https from 'https';
 // Connection pooling — reuse TCP connections across requests
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
+
+// In-memory response cache (TTL-based)
+const responseCache = new Map<string, { data: any; status: number; headers: any; expires: number }>();
+const CACHE_TTL_MS = parseInt(process.env.CACHE_TTL_MS || '30000', 10); // Default 30 seconds
+
+function getCacheKey(method: string, url: string, params?: Record<string, string>): string | null {
+  // Only cache GET requests
+  if (method !== 'GET') return null;
+  const paramStr = params ? JSON.stringify(params) : '';
+  return `${url}|${paramStr}`;
+}
+
+function getCached(key: string): { data: any; status: number; headers: any } | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    responseCache.delete(key);
+    return null;
+  }
+  return { data: entry.data, status: entry.status, headers: entry.headers };
+}
+
+function setCache(key: string, data: any, status: number, headers: any): void {
+  responseCache.set(key, { data, status, headers, expires: Date.now() + CACHE_TTL_MS });
+  // Evict old entries if cache grows too large
+  if (responseCache.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of responseCache) {
+      if (v.expires < now) responseCache.delete(k);
+    }
+  }
+}
 import { BackendApp, BackendCall, Condition, DatabaseConnection, OrchestrationContext, OrchestrationStep, RouteConfig, StepResult } from './types';
 import { resolveAuthHeaders } from './auth';
 import { applyMapping, resolvePath, resolveValue, buildResponse } from './transformer';
@@ -551,8 +583,26 @@ async function executeBackendCall(
         httpsAgent,
       };
 
+      // Check cache for GET requests
+      const cacheKey = getCacheKey(call.method, url, params);
+      const cached = cacheKey ? getCached(cacheKey) : null;
+
+      let response;
       const backendStart = Date.now();
-      const response = await axios(config);
+
+      if (cached) {
+        // Cache hit — use cached response
+        response = { data: cached.data, status: cached.status, headers: cached.headers };
+      } else {
+        // Cache miss — make the request
+        response = await axios(config);
+
+        // Cache successful GET responses
+        if (cacheKey && response.status >= 200 && response.status < 400) {
+          setCache(cacheKey, response.data, response.status, response.headers);
+        }
+      }
+
       const backendDuration = Date.now() - backendStart;
       lastBackendDuration = backendDuration;
 
