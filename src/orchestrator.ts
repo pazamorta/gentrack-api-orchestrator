@@ -293,6 +293,11 @@ async function iterateItems(
         const existing = context.stepResults[call.stepId];
         (existing.body as unknown[]).push(result.body);
         existing.duration += result.duration;
+        // Accumulate request info as array
+        if (result.request) {
+          if (!Array.isArray((existing as any).requests)) (existing as any).requests = [];
+          (existing as any).requests.push(result.request);
+        }
         // Keep the worst status code
         if (result.statusCode > existing.statusCode) {
           existing.statusCode = result.statusCode;

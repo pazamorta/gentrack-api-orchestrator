@@ -2051,6 +2051,7 @@
         {
           "type": "forEach",
           "iterateOver": "$steps.step-1.body.results",
+          "filter": "$item.links.bill",
           "calls": [
             {
               "stepId": "step-2",
