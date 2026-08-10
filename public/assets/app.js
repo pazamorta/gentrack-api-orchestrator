@@ -1304,20 +1304,67 @@ async function loadPerfChart() {
   }
 }
 
+let perfStats = [];
+let perfSortCol = 'callCount';
+let perfSortDir = 'desc';
+
 async function loadPerfTable() {
   const container = document.getElementById('performance-content');
   try {
     const res = await fetch(`${API_BASE}/performance`);
     const data = await res.json();
-    const stats = data.performance || [];
+    perfStats = data.performance || [];
 
-    if (stats.length === 0) {
+    if (perfStats.length === 0) {
       container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No performance data yet. Execute some API calls first.</p>';
       return;
     }
 
+    renderPerfTable();
+  } catch (err) {
+    container.innerHTML = '<p style="color: var(--danger);">Failed to load performance data.</p>';
+  }
+}
+
+function renderPerfTable() {
+    const container = document.getElementById('performance-content');
+    const stats = [...perfStats];
+
+    // Sort
+    stats.sort((a, b) => {
+      let aVal, bVal;
+      switch (perfSortCol) {
+        case 'route': aVal = a.routeName; bVal = b.routeName; break;
+        case 'callCount': aVal = a.callCount; bVal = b.callCount; break;
+        case 'successCount': aVal = a.successCount; bVal = b.successCount; break;
+        case 'failureCount': aVal = a.failureCount; bVal = b.failureCount; break;
+        case 'mean': aVal = a.all.mean; bVal = b.all.mean; break;
+        case 'min': aVal = a.all.min; bVal = b.all.min; break;
+        case 'max': aVal = a.all.max; bVal = b.all.max; break;
+        case 'overhead': aVal = a.overhead.mean; bVal = b.overhead.mean; break;
+        default: aVal = a.callCount; bVal = b.callCount;
+      }
+      if (typeof aVal === 'string') {
+        const cmp = aVal.localeCompare(bVal);
+        return perfSortDir === 'asc' ? cmp : -cmp;
+      }
+      return perfSortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    const sortIcon = (col) => perfSortCol === col ? (perfSortDir === 'asc' ? ' ▲' : ' ▼') : '';
+    const sortStyle = 'cursor: pointer; user-select: none;';
+
     let html = '<table class="perf-table"><thead><tr>';
-    html += '<th><input type="checkbox" id="perf-select-all" checked onchange="togglePerfAll(this.checked)"></th><th>Route</th><th>Total</th><th>Success</th><th>Failed</th><th>Mean (ms)</th><th>Min</th><th>Max</th><th>Overhead</th><th>View</th>';
+    html += '<th><input type="checkbox" id="perf-select-all" checked onchange="togglePerfAll(this.checked)"></th>';
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('route')">Route${sortIcon('route')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('callCount')">Total${sortIcon('callCount')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('successCount')">Success${sortIcon('successCount')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('failureCount')">Failed${sortIcon('failureCount')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('mean')">Mean (ms)${sortIcon('mean')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('min')">Min${sortIcon('min')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('max')">Max${sortIcon('max')}</th>`;
+    html += `<th style="${sortStyle}" onclick="sortPerfTable('overhead')">Overhead${sortIcon('overhead')}</th>`;
+    html += '<th>View</th>';
     html += '</tr></thead><tbody>';
 
     stats.forEach((stat, idx) => {
@@ -1361,9 +1408,16 @@ async function loadPerfTable() {
 
     html += '</tbody></table>';
     container.innerHTML = html;
-  } catch (err) {
-    container.innerHTML = '<p style="color: var(--danger);">Failed to load performance data.</p>';
+}
+
+function sortPerfTable(col) {
+  if (perfSortCol === col) {
+    perfSortDir = perfSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    perfSortCol = col;
+    perfSortDir = 'desc';
   }
+  renderPerfTable();
 }
 
 function togglePerfDetail(idx) {
