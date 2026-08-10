@@ -1,4 +1,10 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import * as http from 'http';
+import * as https from 'https';
+
+// Connection pooling — reuse TCP connections across requests
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
 import { BackendApp, BackendCall, Condition, DatabaseConnection, OrchestrationContext, OrchestrationStep, RouteConfig, StepResult } from './types';
 import { resolveAuthHeaders } from './auth';
 import { applyMapping, resolvePath, resolveValue, buildResponse } from './transformer';
@@ -541,6 +547,8 @@ async function executeBackendCall(
         timeout: backend.timeout || 30_000,
         responseType: call.responseType || 'json',
         validateStatus: () => true, // Don't throw on non-2xx
+        httpAgent,
+        httpsAgent,
       };
 
       const backendStart = Date.now();
