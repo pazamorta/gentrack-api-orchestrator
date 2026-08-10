@@ -1197,6 +1197,7 @@ window.deleteMock = deleteMock;
 
 // ---- Performance ----
 let perfChart = null;
+let perfSelectedRoutes = new Set(); // empty = all selected
 
 async function loadPerformance() {
   await loadPerfChart();
@@ -1205,9 +1206,23 @@ async function loadPerformance() {
 
 async function loadPerfChart() {
   try {
-    const res = await fetch(`${API_BASE}/performance/timeseries`);
+    const routeParam = perfSelectedRoutes.size > 0 ? `?routes=${Array.from(perfSelectedRoutes).join(',')}` : '';
+    const res = await fetch(`${API_BASE}/performance/timeseries${routeParam}`);
     const data = await res.json();
     const timeseries = data.timeseries || [];
+    const routes = data.routes || [];
+
+    // Build filter checkboxes
+    const filtersEl = document.getElementById('perf-chart-filters');
+    if (filtersEl && routes.length > 0) {
+      filtersEl.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; margin-right: 8px;">Filter:</span>' +
+        routes.map(r => {
+          const checked = perfSelectedRoutes.size === 0 || perfSelectedRoutes.has(r.id) ? 'checked' : '';
+          return `<label style="font-size: 0.8rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" value="${r.id}" ${checked} onchange="togglePerfRoute('${r.id}')"> ${escapeHtml(r.name)}
+          </label>`;
+        }).join('');
+    }
 
     const ctx = document.getElementById('perf-chart').getContext('2d');
 
@@ -1345,6 +1360,21 @@ function togglePerfDetail(idx) {
   if (row) {
     row.style.display = row.style.display === 'none' ? '' : 'none';
   }
+}
+
+function togglePerfRoute(routeId) {
+  if (perfSelectedRoutes.has(routeId)) {
+    perfSelectedRoutes.delete(routeId);
+  } else {
+    perfSelectedRoutes.add(routeId);
+  }
+  // If all are unchecked, reset to show all
+  const checkboxes = document.querySelectorAll('#perf-chart-filters input[type="checkbox"]');
+  const allUnchecked = Array.from(checkboxes).every(cb => !cb.checked);
+  if (allUnchecked) {
+    perfSelectedRoutes.clear();
+  }
+  loadPerfChart();
 }
 
 

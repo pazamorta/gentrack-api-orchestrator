@@ -643,15 +643,22 @@ router.get('/performance', (_req: Request, res: Response) => {
 });
 
 /** Get time-series performance data for charting */
-router.get('/performance/timeseries', (_req: Request, res: Response) => {
+router.get('/performance/timeseries', (req: Request, res: Response) => {
   const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
   const bucketSize = 5000; // 5-second buckets
+  const routeFilter = req.query.routes ? (req.query.routes as string).split(',') : null;
 
   // Group by time bucket
   const buckets = new Map<number, { count: number; totalDuration: number }>();
+  const routeMap = new Map<string, string>();
 
   for (const entry of logs) {
     if (entry.route_id === 'unmatched' || entry.route_id === 'unmatched-mock') continue;
+    routeMap.set(entry.route_id, entry.route_name || entry.route_id);
+
+    // Apply route filter if specified
+    if (routeFilter && !routeFilter.includes(entry.route_id)) continue;
+
     const timestamp = new Date(entry.created_at).getTime();
     const bucket = Math.floor(timestamp / bucketSize) * bucketSize;
 
@@ -671,7 +678,9 @@ router.get('/performance/timeseries', (_req: Request, res: Response) => {
     meanResponseTime: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
   }));
 
-  res.json({ timeseries });
+  // Also return available routes for filter UI
+  const routes = Array.from(routeMap.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  res.json({ timeseries, routes });
 });
 
 // ============================================================
