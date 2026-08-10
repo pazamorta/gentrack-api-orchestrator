@@ -1239,13 +1239,23 @@ async function loadPerfChart() {
             fill: true,
           },
           {
-            label: 'Calls/sec',
-            data: timeseries.map(t => t.callsPerSecond),
-            borderColor: '#3fb950',
-            backgroundColor: 'rgba(63, 185, 80, 0.1)',
+            label: 'Concurrent Requests',
+            data: timeseries.map(t => t.concurrency),
+            borderColor: '#d29922',
+            backgroundColor: 'rgba(210, 153, 34, 0.1)',
             yAxisID: 'y1',
             tension: 0.3,
             fill: true,
+          },
+          {
+            label: 'Calls/sec',
+            data: timeseries.map(t => t.callsPerSecond),
+            borderColor: '#3fb950',
+            backgroundColor: 'rgba(63, 185, 80, 0.05)',
+            yAxisID: 'y1',
+            tension: 0.3,
+            fill: false,
+            borderDash: [5, 5],
           }
         ]
       },
@@ -1272,8 +1282,8 @@ async function loadPerfChart() {
             type: 'linear',
             display: true,
             position: 'right',
-            title: { display: true, text: 'Calls/sec', color: '#3fb950' },
-            ticks: { color: '#3fb950' },
+            title: { display: true, text: 'Concurrency / Calls per sec', color: '#d29922' },
+            ticks: { color: '#d29922' },
             grid: { drawOnChartArea: false }
           }
         }

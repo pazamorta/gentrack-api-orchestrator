@@ -672,10 +672,30 @@ router.get('/performance/timeseries', (req: Request, res: Response) => {
 
   // Convert to sorted arrays
   const sorted = Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]);
+
+  // Calculate concurrency per bucket (requests in-flight)
+  // A request is in-flight from (endTime - duration) to endTime
+  const concurrencyBuckets = new Map<number, number>();
+  for (const entry of logs) {
+    if (entry.route_id === 'unmatched' || entry.route_id === 'unmatched-mock') continue;
+    if (routeFilter && !routeFilter.includes(entry.route_id)) continue;
+
+    const endTime = new Date(entry.created_at).getTime();
+    const startTime = endTime - entry.duration_ms;
+
+    // Mark all buckets this request was active in
+    const firstBucket = Math.floor(startTime / bucketSize) * bucketSize;
+    const lastBucket = Math.floor(endTime / bucketSize) * bucketSize;
+    for (let b = firstBucket; b <= lastBucket; b += bucketSize) {
+      concurrencyBuckets.set(b, (concurrencyBuckets.get(b) || 0) + 1);
+    }
+  }
+
   const timeseries = sorted.map(([timestamp, data]) => ({
     time: new Date(timestamp).toISOString(),
     callsPerSecond: Math.round((data.count / (bucketSize / 1000)) * 100) / 100,
     meanResponseTime: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
+    concurrency: concurrencyBuckets.get(timestamp) || 0,
   }));
 
   // Also return available routes for filter UI
