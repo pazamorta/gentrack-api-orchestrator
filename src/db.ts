@@ -213,9 +213,10 @@ export function logExecution(entry: {
     created_at: new Date().toISOString(),
   });
 
-  // Keep only the last 500 entries
-  if (logsStore.executionLog.length > 500) {
-    logsStore.executionLog = logsStore.executionLog.slice(-500);
+  // Keep only the last N entries (configurable via LOG_RETENTION env var, default 5000)
+  const maxLogs = parseInt(process.env.LOG_RETENTION || '5000', 10);
+  if (logsStore.executionLog.length > maxLogs) {
+    logsStore.executionLog = logsStore.executionLog.slice(-maxLogs);
   }
 
   persistLogs();

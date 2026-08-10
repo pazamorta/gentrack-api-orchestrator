@@ -554,7 +554,7 @@ router.delete('/mocks/:id', (req: Request, res: Response) => {
 
 /** Get performance statistics per route */
 router.get('/performance', (_req: Request, res: Response) => {
-  const logs = db.getRecentExecutions(500);
+  const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
   const statsMap = new Map<string, {
     routeId: string;
     routeName: string;
