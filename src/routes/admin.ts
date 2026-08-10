@@ -592,13 +592,15 @@ router.get('/performance', (_req: Request, res: Response) => {
       try {
         const steps = JSON.parse(entry.step_results);
         for (const [stepId, stepData] of Object.entries(steps)) {
-          const sd = stepData as { duration?: number };
+          const sd = stepData as { duration?: number; statusCode?: number };
           if (sd && typeof sd.duration === 'number') {
             if (!stat.stepDurations.has(stepId)) {
               stat.stepDurations.set(stepId, { success: [], failure: [] });
             }
             const stepEntry = stat.stepDurations.get(stepId)!;
-            if (isSuccess) { stepEntry.success.push(sd.duration); }
+            // Use the step's own status code, not the overall response
+            const stepSuccess = sd.statusCode !== undefined ? (sd.statusCode >= 200 && sd.statusCode < 400) : isSuccess;
+            if (stepSuccess) { stepEntry.success.push(sd.duration); }
             else { stepEntry.failure.push(sd.duration); }
           }
         }
