@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refresh-audit-btn').addEventListener('click', loadAudit);
   document.getElementById('clear-audit-btn').addEventListener('click', clearAudit);
   document.getElementById('audit-filter-type').addEventListener('change', loadAudit);
+  document.getElementById('refresh-performance-btn').addEventListener('click', loadPerformance);
   document.getElementById('export-btn').addEventListener('click', exportConfig);
   document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
   document.getElementById('import-file').addEventListener('change', importConfig);
@@ -93,6 +94,7 @@ function setupTabs() {
       if (btn.dataset.tab === 'logs') loadLogs();
       if (btn.dataset.tab === 'audit') loadAudit();
       if (btn.dataset.tab === 'docs') loadDocsIndex();
+      if (btn.dataset.tab === 'performance') loadPerformance();
     });
   });
 
@@ -1191,6 +1193,59 @@ window.viewMock = viewMock;
 window.editMock = editMock;
 window.toggleMock = toggleMock;
 window.deleteMock = deleteMock;
+
+
+// ---- Performance ----
+async function loadPerformance() {
+  const container = document.getElementById('performance-content');
+  try {
+    const res = await fetch(`${API_BASE}/performance`);
+    const data = await res.json();
+    const stats = data.performance || [];
+
+    if (stats.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No performance data yet. Execute some API calls first.</p>';
+      return;
+    }
+
+    let html = '<table class="perf-table"><thead><tr>';
+    html += '<th>Route</th><th>Calls</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th><th>Overhead (ms)</th><th>Details</th>';
+    html += '</tr></thead><tbody>';
+
+    stats.forEach((stat, idx) => {
+      html += `<tr>`;
+      html += `<td><strong>${escapeHtml(stat.routeName)}</strong></td>`;
+      html += `<td>${stat.callCount}</td>`;
+      html += `<td>${stat.total.mean}</td>`;
+      html += `<td>${stat.total.stdDev}</td>`;
+      html += `<td>${stat.total.min}</td>`;
+      html += `<td>${stat.total.max}</td>`;
+      html += `<td>${stat.overhead.mean} ±${stat.overhead.stdDev}</td>`;
+      html += `<td><button class="btn btn-secondary btn-sm" onclick="togglePerfDetail(${idx})">Steps</button></td>`;
+      html += `</tr>`;
+
+      // Step breakdown (hidden by default)
+      html += `<tr id="perf-detail-${idx}" style="display: none;"><td colspan="8">`;
+      html += '<table style="width: 100%; margin: 8px 0;"><thead><tr><th>Step</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th></tr></thead><tbody>';
+      for (const [stepId, stepStat] of Object.entries(stat.steps)) {
+        html += `<tr><td>${escapeHtml(stepId)}</td><td>${stepStat.mean}</td><td>${stepStat.stdDev}</td><td>${stepStat.min}</td><td>${stepStat.max}</td></tr>`;
+      }
+      html += '</tbody></table></td></tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = '<p style="color: var(--danger);">Failed to load performance data.</p>';
+  }
+}
+
+function togglePerfDetail(idx) {
+  const row = document.getElementById(`perf-detail-${idx}`);
+  if (row) {
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+  }
+}
 
 
 // ---- Documentation ----

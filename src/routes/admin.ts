@@ -549,6 +549,100 @@ router.delete('/mocks/:id', (req: Request, res: Response) => {
 });
 
 // ============================================================
+// Performance Stats
+// ============================================================
+
+/** Get performance statistics per route */
+router.get('/performance', (_req: Request, res: Response) => {
+  const logs = db.getRecentExecutions(500);
+  const statsMap = new Map<string, {
+    routeId: string;
+    routeName: string;
+    callCount: number;
+    durations: number[];
+    stepDurations: Map<string, number[]>;
+  }>();
+
+  for (const entry of logs) {
+    const key = entry.route_id;
+    if (key === 'unmatched' || key === 'unmatched-mock') continue;
+
+    if (!statsMap.has(key)) {
+      statsMap.set(key, {
+        routeId: key,
+        routeName: entry.route_name || key,
+        callCount: 0,
+        durations: [],
+        stepDurations: new Map(),
+      });
+    }
+
+    const stat = statsMap.get(key)!;
+    stat.callCount++;
+    stat.durations.push(entry.duration_ms);
+
+    // Parse step results for per-step timing
+    if (entry.step_results) {
+      try {
+        const steps = JSON.parse(entry.step_results);
+        for (const [stepId, stepData] of Object.entries(steps)) {
+          const sd = stepData as { duration?: number };
+          if (sd && typeof sd.duration === 'number') {
+            if (!stat.stepDurations.has(stepId)) {
+              stat.stepDurations.set(stepId, []);
+            }
+            stat.stepDurations.get(stepId)!.push(sd.duration);
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+  }
+
+  // Calculate mean and stddev
+  const calcStats = (arr: number[]) => {
+    if (arr.length === 0) return { mean: 0, stdDev: 0, min: 0, max: 0 };
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+    return {
+      mean: Math.round(mean),
+      stdDev: Math.round(Math.sqrt(variance)),
+      min: Math.round(Math.min(...arr)),
+      max: Math.round(Math.max(...arr)),
+    };
+  };
+
+  const results = Array.from(statsMap.values()).map((stat) => {
+    const totalStats = calcStats(stat.durations);
+    const stepStats: Record<string, { mean: number; stdDev: number; min: number; max: number }> = {};
+    for (const [stepId, durations] of stat.stepDurations) {
+      stepStats[stepId] = calcStats(durations);
+    }
+
+    // Calculate overhead (total - sum of steps)
+    const overheads = stat.durations.map((total, idx) => {
+      let stepSum = 0;
+      for (const durations of stat.stepDurations.values()) {
+        if (durations[idx] !== undefined) stepSum += durations[idx];
+      }
+      return total - stepSum;
+    });
+    const overheadStats = calcStats(overheads);
+
+    return {
+      routeId: stat.routeId,
+      routeName: stat.routeName,
+      callCount: stat.callCount,
+      total: totalStats,
+      overhead: overheadStats,
+      steps: stepStats,
+    };
+  });
+
+  results.sort((a, b) => b.callCount - a.callCount);
+  res.json({ performance: results });
+});
+
+// ============================================================
 // Documentation
 // ============================================================
 

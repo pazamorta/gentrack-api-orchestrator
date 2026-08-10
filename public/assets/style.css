@@ -775,3 +775,43 @@ tr:hover td {
   padding: 12px 16px 4px;
   font-weight: 600;
 }
+
+
+/* Performance Table */
+.perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.perf-table th,
+.perf-table td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.perf-table th {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.perf-table tr:hover td {
+  background: var(--surface-hover);
+}
+
+.perf-table td table {
+  border-collapse: collapse;
+}
+
+.perf-table td table th,
+.perf-table td table td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
+.perf-table td table th {
+  background: var(--bg);
+}
