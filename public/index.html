@@ -6,6 +6,7 @@
   <title>API Orchestrator</title>
   <link rel="icon" type="image/png" href="/ui/favicon.png">
   <link rel="stylesheet" href="/ui/assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -146,6 +147,9 @@
         <div class="section-header">
           <h2>Performance</h2>
           <button class="btn btn-secondary" id="refresh-performance-btn">Refresh</button>
+        </div>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px;">
+          <canvas id="perf-chart" height="200"></canvas>
         </div>
         <div id="performance-content" class="table-container"></div>
       </section>

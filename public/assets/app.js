@@ -1196,7 +1196,91 @@ window.deleteMock = deleteMock;
 
 
 // ---- Performance ----
+let perfChart = null;
+
 async function loadPerformance() {
+  await loadPerfChart();
+  await loadPerfTable();
+}
+
+async function loadPerfChart() {
+  try {
+    const res = await fetch(`${API_BASE}/performance/timeseries`);
+    const data = await res.json();
+    const timeseries = data.timeseries || [];
+
+    const ctx = document.getElementById('perf-chart').getContext('2d');
+
+    if (perfChart) {
+      perfChart.destroy();
+    }
+
+    const labels = timeseries.map(t => {
+      const d = new Date(t.time);
+      return d.toLocaleTimeString();
+    });
+
+    perfChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Mean Response Time (ms)',
+            data: timeseries.map(t => t.meanResponseTime),
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88, 166, 255, 0.1)',
+            yAxisID: 'y',
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: 'Calls/sec',
+            data: timeseries.map(t => t.callsPerSecond),
+            borderColor: '#3fb950',
+            backgroundColor: 'rgba(63, 185, 80, 0.1)',
+            yAxisID: 'y1',
+            tension: 0.3,
+            fill: true,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#8b949e' } }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', maxTicksLimit: 20 },
+            grid: { color: 'rgba(45, 58, 69, 0.5)' }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: { display: true, text: 'Response Time (ms)', color: '#58a6ff' },
+            ticks: { color: '#58a6ff' },
+            grid: { color: 'rgba(45, 58, 69, 0.5)' }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: { display: true, text: 'Calls/sec', color: '#3fb950' },
+            ticks: { color: '#3fb950' },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Failed to load chart:', err);
+  }
+}
+
+async function loadPerfTable() {
   const container = document.getElementById('performance-content');
   try {
     const res = await fetch(`${API_BASE}/performance`);

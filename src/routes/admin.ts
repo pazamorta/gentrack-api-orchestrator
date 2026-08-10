@@ -642,6 +642,38 @@ router.get('/performance', (_req: Request, res: Response) => {
   res.json({ performance: results });
 });
 
+/** Get time-series performance data for charting */
+router.get('/performance/timeseries', (_req: Request, res: Response) => {
+  const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
+  const bucketSize = 5000; // 5-second buckets
+
+  // Group by time bucket
+  const buckets = new Map<number, { count: number; totalDuration: number }>();
+
+  for (const entry of logs) {
+    if (entry.route_id === 'unmatched' || entry.route_id === 'unmatched-mock') continue;
+    const timestamp = new Date(entry.created_at).getTime();
+    const bucket = Math.floor(timestamp / bucketSize) * bucketSize;
+
+    if (!buckets.has(bucket)) {
+      buckets.set(bucket, { count: 0, totalDuration: 0 });
+    }
+    const b = buckets.get(bucket)!;
+    b.count++;
+    b.totalDuration += entry.duration_ms;
+  }
+
+  // Convert to sorted arrays
+  const sorted = Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]);
+  const timeseries = sorted.map(([timestamp, data]) => ({
+    time: new Date(timestamp).toISOString(),
+    callsPerSecond: Math.round((data.count / (bucketSize / 1000)) * 100) / 100,
+    meanResponseTime: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
+  }));
+
+  res.json({ timeseries });
+});
+
 // ============================================================
 // Documentation
 // ============================================================
