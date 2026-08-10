@@ -634,11 +634,15 @@ async function deleteMock(id) {
 }
 
 // ---- Logs ----
-async function loadLogs() {
+let logsPage = 1;
+const logsPerPage = 50;
+
+async function loadLogs(page) {
+  if (page !== undefined) logsPage = page;
   try {
-    const res = await fetch(`${API_BASE}/logs?limit=50`);
+    const res = await fetch(`${API_BASE}/logs?limit=${logsPerPage}&page=${logsPage}`);
     const data = await res.json();
-    renderLogs(data.logs || []);
+    renderLogs(data.logs || [], data.pagination);
   } catch (err) {
     console.error('Failed to load logs:', err);
   }
@@ -654,14 +658,28 @@ async function clearLogs() {
   }
 }
 
-function renderLogs(logs) {
+function renderLogs(logs, pagination) {
   const container = document.getElementById('logs-list');
-  if (logs.length === 0) {
+  if (logs.length === 0 && (!pagination || pagination.total === 0)) {
     container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No execution logs yet. Send a request to /api/* to see logs here.</p>';
     return;
   }
 
-  container.innerHTML = `
+  let paginationHtml = '';
+  if (pagination && pagination.totalPages > 1) {
+    paginationHtml = `<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+      <span style="color: var(--text-muted); font-size: 0.85rem;">Showing ${(pagination.page - 1) * pagination.limit + 1}–${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total}</span>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary btn-sm" ${pagination.page <= 1 ? 'disabled' : ''} onclick="loadLogs(1)">First</button>
+        <button class="btn btn-secondary btn-sm" ${pagination.page <= 1 ? 'disabled' : ''} onclick="loadLogs(${pagination.page - 1})">Prev</button>
+        <span style="color: var(--text); padding: 4px 8px;">Page ${pagination.page} of ${pagination.totalPages}</span>
+        <button class="btn btn-secondary btn-sm" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="loadLogs(${pagination.page + 1})">Next</button>
+        <button class="btn btn-secondary btn-sm" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="loadLogs(${pagination.totalPages})">Last</button>
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = paginationHtml + `
     <table>
       <thead>
         <tr>
@@ -690,7 +708,7 @@ function renderLogs(logs) {
         `).join('')}
       </tbody>
     </table>
-  `;
+  ` + paginationHtml;
 }
 
 async function viewLogEntry(id) {

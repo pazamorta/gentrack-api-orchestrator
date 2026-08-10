@@ -230,6 +230,15 @@ export function getRecentExecutions(limit = 50): ExecutionEntry[] {
   return logsStore.executionLog.slice(-limit).reverse();
 }
 
+export function getPaginatedExecutions(page = 1, limit = 50): { logs: ExecutionEntry[]; total: number; totalPages: number } {
+  const total = logsStore.executionLog.length;
+  const totalPages = Math.ceil(total / limit);
+  const offset = (page - 1) * limit;
+  const reversed = [...logsStore.executionLog].reverse();
+  const logs = reversed.slice(offset, offset + limit);
+  return { logs, total, totalPages };
+}
+
 export function clearExecutionLog(): void {
   logsStore.executionLog = [];
   persistLogs();

@@ -203,8 +203,9 @@ router.post('/import', (req: Request, res: Response) => {
 /** Get recent execution logs */
 router.get('/logs', (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
-  const logs = db.getRecentExecutions(limit);
-  res.json({ logs });
+  const page = parseInt(req.query.page as string) || 1;
+  const { logs, total, totalPages } = db.getPaginatedExecutions(page, limit);
+  res.json({ logs, pagination: { page, limit, total, totalPages } });
 });
 
 /** Clear all execution logs */
