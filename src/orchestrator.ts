@@ -394,10 +394,27 @@ async function executeBackendCall(
 
       // Resolve the URL path
       const resolvedPath = resolvePath(call.path, context);
-      // Support absolute URLs (if path resolves to http:// or https://, use it directly)
-      const url = resolvedPath.startsWith('http://') || resolvedPath.startsWith('https://')
-        ? resolvedPath
-        : `${backend.baseUrl.replace(/\/$/, '')}/${resolvedPath.replace(/^\//, '')}`;
+      // Support absolute URLs — if the resolved path is an absolute URL:
+      // - If it matches the backend host, use it directly
+      // - If it doesn't match, extract just the path portion and use with backend baseUrl
+      let url: string;
+      if (resolvedPath.startsWith('http://') || resolvedPath.startsWith('https://')) {
+        try {
+          const resolvedUrl = new URL(resolvedPath);
+          const backendUrl = new URL(backend.baseUrl);
+          if (resolvedUrl.host === backendUrl.host) {
+            url = resolvedPath;
+          } else {
+            // Different host — extract path and use with backend baseUrl
+            const relativePath = resolvedUrl.pathname;
+            url = `${backend.baseUrl.replace(/\/$/, '')}${relativePath}`;
+          }
+        } catch {
+          url = resolvedPath;
+        }
+      } else {
+        url = `${backend.baseUrl.replace(/\/$/, '')}/${resolvedPath.replace(/^\//, '')}`;
+      }
 
       const logLvl = context.logLevel || 'error';
       if (logLvl === 'info' || logLvl === 'debug') {
