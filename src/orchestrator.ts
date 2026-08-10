@@ -314,9 +314,9 @@ async function iterateItems(
       }
     }
 
-    // Throttle between iterations if configured (default 50ms for forEach with many items)
-    if (step.throttleMs || items.length > 5) {
-      await new Promise(resolve => setTimeout(resolve, step.throttleMs || 50));
+    // Throttle between iterations if explicitly configured
+    if (step.throttleMs) {
+      await new Promise(resolve => setTimeout(resolve, step.throttleMs));
     }
   }
 

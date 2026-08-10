@@ -22,7 +22,7 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   initialDelayMs: 500,
   backoffMultiplier: 2,
   maxDelayMs: 10_000,
-  retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+  retryableStatusCodes: [408, 429, 502, 503, 504],
   retryOnNetworkError: true,
 };
 

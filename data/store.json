@@ -8,9 +8,9 @@
         "type": "None"
       },
       "defaultHeaders": {},
-      "timeout": 10000,
+      "timeout": 5000,
       "retry": {
-        "maxRetries": 3,
+        "maxRetries": 1,
         "initialDelayMs": 500,
         "backoffMultiplier": 2
       }
@@ -30,9 +30,9 @@
       "defaultHeaders": {
         "Host": "api-uk.integration.gentrack.cloud"
       },
-      "timeout": 10000,
+      "timeout": 5000,
       "retry": {
-        "maxRetries": 3,
+        "maxRetries": 1,
         "initialDelayMs": 500,
         "backoffMultiplier": 2
       }
