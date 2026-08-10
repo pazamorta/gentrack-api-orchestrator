@@ -645,7 +645,7 @@ router.get('/performance', (_req: Request, res: Response) => {
 /** Get time-series performance data for charting */
 router.get('/performance/timeseries', (req: Request, res: Response) => {
   const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
-  const bucketSize = 5000; // 5-second buckets
+  const bucketSize = 1000; // 1-second buckets
   const routeFilter = req.query.routes ? (req.query.routes as string).split(',') : null;
 
   // Group by time bucket
