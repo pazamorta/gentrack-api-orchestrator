@@ -405,8 +405,10 @@ async function executeBackendCall(
           if (resolvedUrl.host === backendUrl.host) {
             url = resolvedPath;
           } else {
-            // Different host — extract path and use with backend baseUrl
-            const relativePath = resolvedUrl.pathname;
+            // Different host — extract path, strip common prefixes, and use with backend baseUrl
+            let relativePath = resolvedUrl.pathname;
+            // Strip common internal path prefixes
+            relativePath = relativePath.replace(/^\/rest\/v1\//, '/');
             url = `${backend.baseUrl.replace(/\/$/, '')}${relativePath}`;
           }
         } catch {
