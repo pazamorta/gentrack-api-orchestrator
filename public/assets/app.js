@@ -1212,18 +1212,7 @@ async function loadPerfChart() {
     const timeseries = data.timeseries || [];
     const routes = data.routes || [];
 
-    // Build filter checkboxes
-    const filtersEl = document.getElementById('perf-chart-filters');
-    if (filtersEl && routes.length > 0) {
-      filtersEl.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; margin-right: 8px;">Filter:</span>' +
-        routes.map(r => {
-          const checked = perfSelectedRoutes.size === 0 || perfSelectedRoutes.has(r.id) ? 'checked' : '';
-          return `<label style="font-size: 0.8rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-            <input type="checkbox" value="${r.id}" ${checked} onchange="togglePerfRoute('${r.id}')"> ${escapeHtml(r.name)}
-          </label>`;
-        }).join('');
-    }
-
+    // Build filter checkboxes (moved to table)
     const ctx = document.getElementById('perf-chart').getContext('2d');
 
     if (perfChart) {
@@ -1308,12 +1297,14 @@ async function loadPerfTable() {
     }
 
     let html = '<table class="perf-table"><thead><tr>';
-    html += '<th>Route</th><th>Total</th><th>Success</th><th>Failed</th><th>Mean (ms)</th><th>Min</th><th>Max</th><th>Overhead</th><th>View</th>';
+    html += '<th><input type="checkbox" id="perf-select-all" checked onchange="togglePerfAll(this.checked)"></th><th>Route</th><th>Total</th><th>Success</th><th>Failed</th><th>Mean (ms)</th><th>Min</th><th>Max</th><th>Overhead</th><th>View</th>';
     html += '</tr></thead><tbody>';
 
     stats.forEach((stat, idx) => {
       const failRate = stat.callCount > 0 ? Math.round((stat.failureCount / stat.callCount) * 100) : 0;
+      const checked = perfSelectedRoutes.size === 0 || perfSelectedRoutes.has(stat.routeId) ? 'checked' : '';
       html += `<tr>`;
+      html += `<td><input type="checkbox" ${checked} onchange="togglePerfRoute('${stat.routeId}')"></td>`;
       html += `<td><strong>${escapeHtml(stat.routeName)}</strong></td>`;
       html += `<td>${stat.callCount}</td>`;
       html += `<td style="color: var(--success);">${stat.successCount}</td>`;
@@ -1326,7 +1317,7 @@ async function loadPerfTable() {
       html += `</tr>`;
 
       // Expandable detail row
-      html += `<tr id="perf-detail-${idx}" style="display: none;"><td colspan="9" style="padding: 16px;">`;
+      html += `<tr id="perf-detail-${idx}" style="display: none;"><td colspan="10" style="padding: 16px;">`;
 
       // Success/Failure/All summary
       html += '<h4 style="margin: 0 0 8px; color: var(--text-muted);">Response Time Breakdown</h4>';
@@ -1369,10 +1360,20 @@ function togglePerfRoute(routeId) {
     perfSelectedRoutes.add(routeId);
   }
   // If all are unchecked, reset to show all
-  const checkboxes = document.querySelectorAll('#perf-chart-filters input[type="checkbox"]');
+  const checkboxes = document.querySelectorAll('.perf-table input[type="checkbox"]:not(#perf-select-all)');
   const allUnchecked = Array.from(checkboxes).every(cb => !cb.checked);
   if (allUnchecked) {
     perfSelectedRoutes.clear();
+  }
+  loadPerfChart();
+}
+
+function togglePerfAll(checked) {
+  const checkboxes = document.querySelectorAll('.perf-table input[type="checkbox"]:not(#perf-select-all)');
+  checkboxes.forEach(cb => { cb.checked = checked; });
+  perfSelectedRoutes.clear();
+  if (!checked) {
+    // All unchecked = show nothing, but we'll treat it as show all
   }
   loadPerfChart();
 }
