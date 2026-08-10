@@ -148,10 +148,10 @@
           <h2>Performance</h2>
           <button class="btn btn-secondary" id="refresh-performance-btn">Refresh</button>
         </div>
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px;">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; position: sticky; top: 0; z-index: 10;">
           <canvas id="perf-chart" height="100"></canvas>
         </div>
-        <div id="performance-content" class="table-container"></div>
+        <div id="performance-content" class="table-container" style="max-height: 50vh; overflow-y: auto;"></div>
       </section>
 
       <!-- Test Tab -->
