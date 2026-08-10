@@ -649,7 +649,7 @@ router.get('/performance/timeseries', (req: Request, res: Response) => {
   const routeFilter = req.query.routes ? (req.query.routes as string).split(',') : null;
 
   // Group by time bucket
-  const buckets = new Map<number, { count: number; totalDuration: number }>();
+  const buckets = new Map<number, { count: number; totalDuration: number; totalStepDuration: number }>();
   const routeMap = new Map<string, string>();
 
   for (const entry of logs) {
@@ -663,11 +663,24 @@ router.get('/performance/timeseries', (req: Request, res: Response) => {
     const bucket = Math.floor(timestamp / bucketSize) * bucketSize;
 
     if (!buckets.has(bucket)) {
-      buckets.set(bucket, { count: 0, totalDuration: 0 });
+      buckets.set(bucket, { count: 0, totalDuration: 0, totalStepDuration: 0 });
     }
     const b = buckets.get(bucket)!;
     b.count++;
     b.totalDuration += entry.duration_ms;
+
+    // Calculate step duration sum for overhead
+    if (entry.step_results) {
+      try {
+        const steps = JSON.parse(entry.step_results);
+        let stepSum = 0;
+        for (const stepData of Object.values(steps)) {
+          const sd = stepData as { duration?: number };
+          if (sd && typeof sd.duration === 'number') stepSum += sd.duration;
+        }
+        b.totalStepDuration += stepSum;
+      } catch { /* ignore */ }
+    }
   }
 
   // Convert to sorted arrays
@@ -695,6 +708,7 @@ router.get('/performance/timeseries', (req: Request, res: Response) => {
     time: new Date(timestamp).toISOString(),
     callsPerSecond: Math.round((data.count / (bucketSize / 1000)) * 100) / 100,
     meanResponseTime: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
+    meanOverhead: data.count > 0 ? Math.round((data.totalDuration - data.totalStepDuration) / data.count) : 0,
     concurrency: concurrencyBuckets.get(timestamp) || 0,
   }));
 

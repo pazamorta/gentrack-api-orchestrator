@@ -1239,6 +1239,16 @@ async function loadPerfChart() {
             fill: true,
           },
           {
+            label: 'Overhead (ms)',
+            data: timeseries.map(t => t.meanOverhead),
+            borderColor: '#f85149',
+            backgroundColor: 'rgba(248, 81, 73, 0.1)',
+            yAxisID: 'y',
+            tension: 0.3,
+            fill: true,
+            borderDash: [3, 3],
+          },
+          {
             label: 'Concurrent Requests',
             data: timeseries.map(t => t.concurrency),
             borderColor: '#d29922',
