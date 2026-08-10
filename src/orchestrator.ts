@@ -376,6 +376,7 @@ async function executeBackendCall(
 
   // Track outbound request details for logging
   let lastRequestInfo: { method: string; url: string; headers?: Record<string, string>; params?: Record<string, string>; body?: unknown } | undefined;
+  let lastBackendDuration = 0;
 
   const retryResult = await withRetry(
     async () => {
@@ -514,7 +515,10 @@ async function executeBackendCall(
         validateStatus: () => true, // Don't throw on non-2xx
       };
 
+      const backendStart = Date.now();
       const response = await axios(config);
+      const backendDuration = Date.now() - backendStart;
+      lastBackendDuration = backendDuration;
 
       // Log full details on error responses or debug all responses
       if (response.status >= 400) {
@@ -596,7 +600,7 @@ async function executeBackendCall(
       statusCode: response.status,
       headers: response.headers as Record<string, string>,
       body,
-      duration,
+      duration: lastBackendDuration,
       request: lastRequestInfo,
     };
   }
