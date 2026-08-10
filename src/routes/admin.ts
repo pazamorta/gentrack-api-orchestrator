@@ -558,9 +558,10 @@ router.get('/performance', (_req: Request, res: Response) => {
   const statsMap = new Map<string, {
     routeId: string;
     routeName: string;
-    callCount: number;
-    durations: number[];
-    stepDurations: Map<string, number[]>;
+    successDurations: number[];
+    failureDurations: number[];
+    allDurations: number[];
+    stepDurations: Map<string, { success: number[]; failure: number[] }>;
   }>();
 
   for (const entry of logs) {
@@ -571,17 +572,22 @@ router.get('/performance', (_req: Request, res: Response) => {
       statsMap.set(key, {
         routeId: key,
         routeName: entry.route_name || key,
-        callCount: 0,
-        durations: [],
+        successDurations: [],
+        failureDurations: [],
+        allDurations: [],
         stepDurations: new Map(),
       });
     }
 
     const stat = statsMap.get(key)!;
-    stat.callCount++;
-    stat.durations.push(entry.duration_ms);
+    const isSuccess = entry.status_code >= 200 && entry.status_code < 400;
+    stat.allDurations.push(entry.duration_ms);
+    if (isSuccess) {
+      stat.successDurations.push(entry.duration_ms);
+    } else {
+      stat.failureDurations.push(entry.duration_ms);
+    }
 
-    // Parse step results for per-step timing
     if (entry.step_results) {
       try {
         const steps = JSON.parse(entry.step_results);
@@ -589,51 +595,43 @@ router.get('/performance', (_req: Request, res: Response) => {
           const sd = stepData as { duration?: number };
           if (sd && typeof sd.duration === 'number') {
             if (!stat.stepDurations.has(stepId)) {
-              stat.stepDurations.set(stepId, []);
+              stat.stepDurations.set(stepId, { success: [], failure: [] });
             }
-            stat.stepDurations.get(stepId)!.push(sd.duration);
+            const stepEntry = stat.stepDurations.get(stepId)!;
+            if (isSuccess) { stepEntry.success.push(sd.duration); }
+            else { stepEntry.failure.push(sd.duration); }
           }
         }
-      } catch { /* ignore parse errors */ }
+      } catch { /* ignore */ }
     }
   }
 
-  // Calculate mean and stddev
   const calcStats = (arr: number[]) => {
-    if (arr.length === 0) return { mean: 0, stdDev: 0, min: 0, max: 0 };
+    if (arr.length === 0) return { count: 0, mean: 0, stdDev: 0, min: 0, max: 0 };
     const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
     const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
-    return {
-      mean: Math.round(mean),
-      stdDev: Math.round(Math.sqrt(variance)),
-      min: Math.round(Math.min(...arr)),
-      max: Math.round(Math.max(...arr)),
-    };
+    return { count: arr.length, mean: Math.round(mean), stdDev: Math.round(Math.sqrt(variance)), min: Math.round(Math.min(...arr)), max: Math.round(Math.max(...arr)) };
   };
 
   const results = Array.from(statsMap.values()).map((stat) => {
-    const totalStats = calcStats(stat.durations);
-    const stepStats: Record<string, { mean: number; stdDev: number; min: number; max: number }> = {};
+    const stepStats: Record<string, { all: ReturnType<typeof calcStats>; success: ReturnType<typeof calcStats>; failure: ReturnType<typeof calcStats> }> = {};
     for (const [stepId, durations] of stat.stepDurations) {
-      stepStats[stepId] = calcStats(durations);
+      stepStats[stepId] = {
+        all: calcStats([...durations.success, ...durations.failure]),
+        success: calcStats(durations.success),
+        failure: calcStats(durations.failure),
+      };
     }
-
-    // Calculate overhead (total - sum of steps)
-    const overheads = stat.durations.map((total, idx) => {
-      let stepSum = 0;
-      for (const durations of stat.stepDurations.values()) {
-        if (durations[idx] !== undefined) stepSum += durations[idx];
-      }
-      return total - stepSum;
-    });
-    const overheadStats = calcStats(overheads);
-
     return {
       routeId: stat.routeId,
       routeName: stat.routeName,
-      callCount: stat.callCount,
-      total: totalStats,
-      overhead: overheadStats,
+      callCount: stat.allDurations.length,
+      successCount: stat.successDurations.length,
+      failureCount: stat.failureDurations.length,
+      all: calcStats(stat.allDurations),
+      success: calcStats(stat.successDurations),
+      failure: calcStats(stat.failureDurations),
+      overhead: calcStats(stat.allDurations.map((t) => Math.max(0, t - [...stat.stepDurations.values()].reduce((s, d) => s + ([...d.success, ...d.failure].shift() || 0), 0)))),
       steps: stepStats,
     };
   });

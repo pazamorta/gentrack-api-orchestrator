@@ -1209,28 +1209,45 @@ async function loadPerformance() {
     }
 
     let html = '<table class="perf-table"><thead><tr>';
-    html += '<th>Route</th><th>Calls</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th><th>Overhead (ms)</th><th>Details</th>';
+    html += '<th>Route</th><th>Total</th><th>Success</th><th>Failed</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th><th>Overhead</th><th>View</th>';
     html += '</tr></thead><tbody>';
 
     stats.forEach((stat, idx) => {
+      const failRate = stat.callCount > 0 ? Math.round((stat.failureCount / stat.callCount) * 100) : 0;
       html += `<tr>`;
       html += `<td><strong>${escapeHtml(stat.routeName)}</strong></td>`;
       html += `<td>${stat.callCount}</td>`;
-      html += `<td>${stat.total.mean}</td>`;
-      html += `<td>${stat.total.stdDev}</td>`;
-      html += `<td>${stat.total.min}</td>`;
-      html += `<td>${stat.total.max}</td>`;
+      html += `<td style="color: var(--success);">${stat.successCount}</td>`;
+      html += `<td style="color: ${stat.failureCount > 0 ? 'var(--danger)' : 'var(--text-muted)'};">${stat.failureCount}${failRate > 0 ? ` (${failRate}%)` : ''}</td>`;
+      html += `<td>${stat.all.mean}</td>`;
+      html += `<td>${stat.all.stdDev}</td>`;
+      html += `<td>${stat.all.min}</td>`;
+      html += `<td>${stat.all.max}</td>`;
       html += `<td>${stat.overhead.mean} ±${stat.overhead.stdDev}</td>`;
-      html += `<td><button class="btn btn-secondary btn-sm" onclick="togglePerfDetail(${idx})">Steps</button></td>`;
+      html += `<td><button class="btn btn-secondary btn-sm" onclick="togglePerfDetail(${idx})">Details</button></td>`;
       html += `</tr>`;
 
-      // Step breakdown (hidden by default)
-      html += `<tr id="perf-detail-${idx}" style="display: none;"><td colspan="8">`;
-      html += '<table style="width: 100%; margin: 8px 0;"><thead><tr><th>Step</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th></tr></thead><tbody>';
+      // Expandable detail row
+      html += `<tr id="perf-detail-${idx}" style="display: none;"><td colspan="10" style="padding: 16px;">`;
+
+      // Success/Failure/All summary
+      html += '<h4 style="margin: 0 0 8px; color: var(--text-muted);">Response Time Breakdown</h4>';
+      html += '<table style="width: 100%; margin-bottom: 16px;"><thead><tr><th>Category</th><th>Count</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th></tr></thead><tbody>';
+      html += `<tr><td>All</td><td>${stat.all.count}</td><td>${stat.all.mean}</td><td>${stat.all.stdDev}</td><td>${stat.all.min}</td><td>${stat.all.max}</td></tr>`;
+      html += `<tr><td style="color: var(--success);">Success (2xx/3xx)</td><td>${stat.success.count}</td><td>${stat.success.mean}</td><td>${stat.success.stdDev}</td><td>${stat.success.min}</td><td>${stat.success.max}</td></tr>`;
+      html += `<tr><td style="color: var(--danger);">Failed (4xx/5xx)</td><td>${stat.failure.count}</td><td>${stat.failure.mean}</td><td>${stat.failure.stdDev}</td><td>${stat.failure.min}</td><td>${stat.failure.max}</td></tr>`;
+      html += '</tbody></table>';
+
+      // Per-step breakdown
+      html += '<h4 style="margin: 0 0 8px; color: var(--text-muted);">Per-Step Breakdown</h4>';
+      html += '<table style="width: 100%;"><thead><tr><th>Step</th><th>Category</th><th>Count</th><th>Mean (ms)</th><th>Std Dev</th><th>Min</th><th>Max</th></tr></thead><tbody>';
       for (const [stepId, stepStat] of Object.entries(stat.steps)) {
-        html += `<tr><td>${escapeHtml(stepId)}</td><td>${stepStat.mean}</td><td>${stepStat.stdDev}</td><td>${stepStat.min}</td><td>${stepStat.max}</td></tr>`;
+        html += `<tr><td rowspan="3"><strong>${escapeHtml(stepId)}</strong></td><td>All</td><td>${stepStat.all.count}</td><td>${stepStat.all.mean}</td><td>${stepStat.all.stdDev}</td><td>${stepStat.all.min}</td><td>${stepStat.all.max}</td></tr>`;
+        html += `<tr><td style="color: var(--success);">Success</td><td>${stepStat.success.count}</td><td>${stepStat.success.mean}</td><td>${stepStat.success.stdDev}</td><td>${stepStat.success.min}</td><td>${stepStat.success.max}</td></tr>`;
+        html += `<tr><td style="color: var(--danger);">Failed</td><td>${stepStat.failure.count}</td><td>${stepStat.failure.mean}</td><td>${stepStat.failure.stdDev}</td><td>${stepStat.failure.min}</td><td>${stepStat.failure.max}</td></tr>`;
       }
-      html += '</tbody></table></td></tr>';
+      html += '</tbody></table>';
+      html += '</td></tr>';
     });
 
     html += '</tbody></table>';
