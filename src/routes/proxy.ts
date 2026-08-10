@@ -106,7 +106,7 @@ router.all('*', async (req: Request, res: Response) => {
       inboundBody: req.body,
       statusCode: result.statusCode,
       durationMs: duration,
-      stepResults: context.stepResults,
+      stepResults: { ...context.stepResults, _backendWallTime: (result as any).backendWallTime || 0 },
       responseBody: result.body,
     });
 

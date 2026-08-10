@@ -16,7 +16,11 @@ export async function executeOrchestration(
 ): Promise<{ statusCode: number; headers: Record<string, string>; body: unknown }> {
   // Execute each step in order
   for (const step of route.steps) {
+    const stepStart = Date.now();
     await executeStep(step, backends, context, databases);
+    const stepWallTime = Date.now() - stepStart;
+    // Track cumulative wall-clock backend time (handles parallel correctly)
+    (context as any).totalBackendWallTime = ((context as any).totalBackendWallTime || 0) + stepWallTime;
 
     // Check if any step in this group returned an error status (skip for forEach — collect all results)
     if (step.type !== 'forEach' && !route.suppressErrorPassthrough) {
@@ -99,7 +103,7 @@ export async function executeOrchestration(
 
   const headers = route.responseMapping.headers || {};
 
-  return { statusCode, headers, body: finalBody };
+  return { statusCode, headers, body: finalBody, backendWallTime: (context as any).totalBackendWallTime || 0 } as any;
 }
 
 /**

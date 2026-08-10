@@ -673,12 +673,18 @@ router.get('/performance/timeseries', (req: Request, res: Response) => {
     if (entry.step_results) {
       try {
         const steps = JSON.parse(entry.step_results);
-        let stepSum = 0;
-        for (const stepData of Object.values(steps)) {
-          const sd = stepData as { duration?: number };
-          if (sd && typeof sd.duration === 'number') stepSum += sd.duration;
+        // Use _backendWallTime if available (accurate for parallel steps)
+        if (steps._backendWallTime !== undefined) {
+          b.totalStepDuration += steps._backendWallTime;
+        } else {
+          let stepSum = 0;
+          for (const [key, stepData] of Object.entries(steps)) {
+            if (key === '_backendWallTime') continue;
+            const sd = stepData as { duration?: number };
+            if (sd && typeof sd.duration === 'number') stepSum += sd.duration;
+          }
+          b.totalStepDuration += stepSum;
         }
-        b.totalStepDuration += stepSum;
       } catch { /* ignore */ }
     }
   }
