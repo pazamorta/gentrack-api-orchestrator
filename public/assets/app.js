@@ -1428,15 +1428,16 @@ function togglePerfDetail(idx) {
 }
 
 function togglePerfRoute(routeId) {
-  if (perfSelectedRoutes.has(routeId)) {
+  // If set is empty (all selected), initialize with all routes minus the unchecked one
+  if (perfSelectedRoutes.size === 0) {
+    perfStats.forEach(s => { if (s.routeId !== routeId) perfSelectedRoutes.add(s.routeId); });
+  } else if (perfSelectedRoutes.has(routeId)) {
     perfSelectedRoutes.delete(routeId);
   } else {
     perfSelectedRoutes.add(routeId);
   }
-  // If all are unchecked, reset to show all
-  const checkboxes = document.querySelectorAll('.perf-table input[type="checkbox"]:not(#perf-select-all)');
-  const allUnchecked = Array.from(checkboxes).every(cb => !cb.checked);
-  if (allUnchecked) {
+  // If all are selected again, clear the set (means "all")
+  if (perfSelectedRoutes.size === perfStats.length) {
     perfSelectedRoutes.clear();
   }
   loadPerfChart();
@@ -1446,9 +1447,6 @@ function togglePerfAll(checked) {
   const checkboxes = document.querySelectorAll('.perf-table input[type="checkbox"]:not(#perf-select-all)');
   checkboxes.forEach(cb => { cb.checked = checked; });
   perfSelectedRoutes.clear();
-  if (!checked) {
-    // All unchecked = show nothing, but we'll treat it as show all
-  }
   loadPerfChart();
 }
 
