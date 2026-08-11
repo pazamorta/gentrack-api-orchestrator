@@ -724,12 +724,34 @@ function renderLogs(logs, pagination) {
           <th>Path</th>
           <th>Status</th>
           <th>Duration</th>
+          <th>Backend</th>
+          <th>Overhead</th>
           <th>Error</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        ${logs.map((log) => `
+        ${logs.map((log) => {
+          let backendTime = '—';
+          let overhead = '—';
+          if (log.step_results) {
+            try {
+              const steps = JSON.parse(log.step_results);
+              if (steps._backendWallTime !== undefined) {
+                backendTime = steps._backendWallTime + 'ms';
+                overhead = Math.max(0, log.duration_ms - steps._backendWallTime) + 'ms';
+              } else {
+                let stepSum = 0;
+                for (const [key, val] of Object.entries(steps)) {
+                  if (key === '_backendWallTime') continue;
+                  if (val && typeof val.duration === 'number') stepSum += val.duration;
+                }
+                backendTime = stepSum + 'ms';
+                overhead = Math.max(0, log.duration_ms - stepSum) + 'ms';
+              }
+            } catch {}
+          }
+          return `
           <tr>
             <td>${new Date(log.created_at).toLocaleString()}</td>
             <td>${escapeHtml(log.route_name || '')}</td>
@@ -737,10 +759,12 @@ function renderLogs(logs, pagination) {
             <td>${escapeHtml(log.inbound_path)}</td>
             <td><span class="status-badge status-${statusClass(log.status_code)}">${log.status_code}</span></td>
             <td>${log.duration_ms}ms</td>
+            <td>${backendTime}</td>
+            <td>${overhead}</td>
             <td>${log.error ? escapeHtml(log.error.slice(0, 50)) : '—'}</td>
             <td><button class="btn btn-secondary btn-sm" onclick="viewLogEntry(${log.id})">View</button></td>
           </tr>
-        `).join('')}
+        `}).join('')}
       </tbody>
     </table>
   ` + paginationHtml;
