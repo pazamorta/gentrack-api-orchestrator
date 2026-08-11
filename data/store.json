@@ -2070,15 +2070,6 @@
                 {
                   "conditions": [
                     {
-                      "field": "testFl",
-                      "operator": "eq",
-                      "value": true
-                    }
-                  ]
-                },
-                {
-                  "conditions": [
-                    {
                       "field": "statusCode",
                       "operator": "eq",
                       "value": "Failed"
