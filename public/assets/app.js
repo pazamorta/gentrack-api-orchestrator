@@ -1278,7 +1278,18 @@ let perfSelectedRoutes = new Set(); // empty = all selected
 let perfTimeFrom = '';
 let perfTimeTo = '';
 
+function getDefaultPerfFrom() {
+  const d = new Date(Date.now() - 10 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 async function loadPerformance() {
+  // Set default from if not already set
+  if (!perfTimeFrom) {
+    perfTimeFrom = getDefaultPerfFrom();
+    document.getElementById('perf-from').value = perfTimeFrom;
+  }
   await loadPerfChart();
   await loadPerfTable();
 }
@@ -1296,10 +1307,10 @@ function applyPerfTimeFilter() {
   loadPerformance();
 }
 
-function clearPerfTimeFilter() {
-  perfTimeFrom = '';
+function resetPerfTimeFilter() {
+  perfTimeFrom = getDefaultPerfFrom();
   perfTimeTo = '';
-  document.getElementById('perf-from').value = '';
+  document.getElementById('perf-from').value = perfTimeFrom;
   document.getElementById('perf-to').value = '';
   loadPerformance();
 }
