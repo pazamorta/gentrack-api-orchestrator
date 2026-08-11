@@ -114,8 +114,13 @@ function isNetworkError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const networkCodes = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN'];
   const axiosError = error as { code?: string; message?: string };
-  if (axiosError.code && networkCodes.includes(axiosError.code)) return true;
-  if (axiosError.message?.includes('timeout')) return true;
+  if (axiosError.code && networkCodes.includes(axiosError.code)) {
+    // Don't retry timeouts — they indicate the backend is slow, retrying just adds load
+    if (axiosError.code === 'ETIMEDOUT') return false;
+    return true;
+  }
+  // Don't retry on timeout exceeded — backend is slow, retrying won't help
+  if (axiosError.message?.includes('timeout')) return false;
   return false;
 }
 
