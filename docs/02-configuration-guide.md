@@ -7,6 +7,18 @@ All configuration is stored in `data/store.json` and can be managed via:
 - The Admin API at `/admin`
 - Direct file editing (requires server restart)
 
+## Environment Variables
+
+| Variable             | Default   | Description                                  |
+|----------------------|-----------|----------------------------------------------|
+| `PORT`               | `3000`    | Server port                                  |
+| `ADMIN_USER`         | `admin`   | Dashboard login username                     |
+| `ADMIN_PASS`         | `welcome` | Dashboard login password                     |
+| `RATE_LIMIT_MAX`     | `1000`    | Max requests per rate limit window           |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window in milliseconds            |
+| `CACHE_TTL_MS`       | `30000`   | GET response cache TTL in milliseconds       |
+| `LOG_RETENTION`      | `5000`    | Max execution log entries retained           |
+
 ## Backends
 
 A backend represents a downstream API system.
@@ -40,8 +52,16 @@ A backend represents a downstream API system.
 | `auth`            | object                  | Authentication config (`None`, `Bearer`, `Basic`)     |
 | `forwardHeaders`  | `true` or `string[]`    | Forward inbound headers to this backend               |
 | `defaultHeaders`  | object                  | Headers sent with every request to this backend       |
-| `timeout`         | number                  | Request timeout in milliseconds                       |
+| `timeout`         | number                  | Request timeout in milliseconds (default 30000)       |
 | `retry`           | object                  | Retry configuration                                   |
+
+### Header Forwarding
+
+Backend-level header forwarding can be:
+- `true` — Forward all inbound headers (except hop-by-hop headers like host, connection, content-length)
+- `string[]` — Forward only named headers (case-insensitive matching)
+
+Headers are forwarded with proper casing (e.g., `authorization` becomes `Authorization`).
 
 ### Header Precedence (last wins)
 
@@ -50,6 +70,19 @@ A backend represents a downstream API system.
 3. `defaultHeaders` from backend config
 4. Auth headers (resolved from `auth` config)
 5. Per-call `headers` from route step
+
+### Retry Configuration
+
+| Field               | Default | Description                              |
+|---------------------|---------|------------------------------------------|
+| `maxRetries`        | `3`     | Maximum retry attempts (0 = no retries)  |
+| `initialDelayMs`    | `500`   | Delay before first retry                 |
+| `backoffMultiplier` | `2`     | Exponential backoff multiplier           |
+| `maxDelayMs`        | `10000` | Maximum delay between retries            |
+| `retryableStatusCodes` | `[408, 429, 502, 503, 504]` | Codes that trigger retry |
+| `retryOnNetworkError` | `true` | Retry on connection/timeout errors      |
+
+Retry includes 10% jitter to avoid thundering herd.
 
 ## Routes
 
@@ -78,9 +111,28 @@ A route defines an inbound API endpoint and its orchestration flow.
 | `method`                   | string  | HTTP method (GET, POST, PUT, DELETE)                  |
 | `path`                     | string  | URL pattern with `:param` placeholders                |
 | `logLevel`                 | string  | `none`, `error`, `info`, `debug`                     |
+| `description`              | string  | Human-readable description                            |
 | `suppressErrorPassthrough` | boolean | If true, response mapping runs even on 4xx/5xx       |
 | `steps`                    | array   | Ordered list of orchestration steps                   |
 | `responseMapping`          | object  | How to build the final response                       |
+
+### suppressErrorPassthrough
+
+By default, if any backend step returns 4xx/5xx, the orchestrator short-circuits and returns the error response directly. Setting `suppressErrorPassthrough: true` forces response mapping to run regardless:
+
+```json
+{
+  "name": "Post Validate Meter Reads",
+  "suppressErrorPassthrough": true,
+  "steps": [...],
+  "responseMapping": {
+    "statusCode": { "$source": "$steps.step-1.statusCode", "$when": [200, 204, 400], "$override": 200 },
+    "body": { ... }
+  }
+}
+```
+
+Use this for validation endpoints where 400 from the backend contains structured data you want to reshape and return to the caller.
 
 ### Log Levels
 
@@ -139,6 +191,31 @@ Iterate over an array from a previous step. Results accumulate as arrays.
 - `$steps.step-2.body` — An array of results (one per iteration)
 - Use `$steps.step-2.body[$$].field` in response mapping to cross-reference by index
 
+#### ForEach Filter
+
+Skip items that don't meet a condition using the `filter` field:
+
+```json
+{
+  "type": "forEach",
+  "iterateOver": "$steps.step-1.body.results[*]",
+  "filter": "$item.links.meterStructure",
+  "calls": [...]
+}
+```
+
+Only items where the filter expression resolves to a truthy value will be iterated. This avoids unnecessary backend calls for items missing required data.
+
+#### Array Wildcard [*]
+
+Use `[*]` to flatten nested arrays before iterating:
+
+```json
+"iterateOver": "$steps.get-meterpoints.body[*].results[*]"
+```
+
+This resolves all `results` arrays across all items in the `get-meterpoints` body, flattens them into a single array, and iterates over each item. Always returns an array even if only one match is found.
+
 ### Conditional
 
 Execute calls only if a condition is met.
@@ -164,7 +241,7 @@ Each call within a step:
   "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}",
   "forwardHeaders": true,
   "headers": { "Host": "api-uk.integration.gentrack.cloud" },
-  "queryMapping": { "fromDt": "$.inboundRequest.query.fromDate" },
+  "queryMapping": { "fromDt": "$.inboundRequest.query.fromDate", "effectiveDt": "$now.date" },
   "bodyMapping": { "field": "$.inboundRequest.body.value" },
   "bodyTemplate": { "static": true, "dynamic": "$steps.step-1.body.id" }
 }
@@ -179,25 +256,51 @@ Each call within a step:
 | `method`         | HTTP method                                                |
 | `path`           | URL path (supports `{{expression}}` templates)             |
 | `forwardHeaders` | Override backend's forwardHeaders for this call             |
-| `headers`        | Additional headers for this call                           |
+| `headers`        | Additional headers for this call (supports `$` expressions)|
 | `queryMapping`   | Query parameters (values are resolved expressions)         |
 | `bodyMapping`    | Request body built from expressions                        |
 | `bodyTemplate`   | Full body template with literal + dynamic values           |
+| `responseType`   | Axios response type (default `json`, use `arraybuffer` for binary) |
 
 ### Path Templates
 
 - `:param` — Replaced from inbound path parameters
 - `{{$.inboundRequest.params.id}}` — Expression template
 - `{{$item.links.self}}` — Current forEach item field
-- Absolute URLs (starting with `http://`) are used directly (skip baseUrl)
+- `{{$steps.step-1.body.entityUrl}}` — Previous step result
+- Absolute URLs (starting with `http://`) — Used directly or rewritten (see URL Rewriting)
+
+### URL Rewriting
+
+When a resolved path is an absolute URL pointing to a different host than the backend's `baseUrl`, the orchestrator:
+
+1. Parses the URL host
+2. Compares to the backend's `baseUrl` host
+3. If different, extracts just the path portion
+4. Strips common internal prefixes (e.g., `/rest/v1/`)
+5. Appends the cleaned path to the backend's `baseUrl`
+
+This handles entity URLs from backends that point to internal hosts rather than the API gateway.
+
+### Body Template vs Body Mapping
+
+- `bodyMapping` — Simple key-value pairs resolved from context
+- `bodyTemplate` — Full JSON structure with mixed literal and dynamic values
+
+In `bodyTemplate`, use `$.inboundRequest.body.field` for values resolved by `resolveValue`. In `$pick` contexts (within response mapping), use `$context.inboundRequest.body.field` to access the full orchestration context.
 
 ## Response Mapping
 
 ### Status Code
 
+Simple:
 ```json
 "statusCode": 200
 "statusCode": "$steps.step-1.statusCode"
+```
+
+Conditional (override based on backend response):
+```json
 "statusCode": {
   "$source": "$steps.step-1.statusCode",
   "$when": [200, 204, 400],
@@ -205,7 +308,7 @@ Each call within a step:
 }
 ```
 
-The conditional form returns `$override` when the actual status is in `$when`, otherwise passes through.
+If the backend returns a status in `$when`, the response returns `$override`. Otherwise, the actual status passes through. Useful with `suppressErrorPassthrough` for validation endpoints.
 
 ### Body
 
@@ -218,6 +321,22 @@ The conditional form returns `$override` when the actual status is in `$when`, o
 ```
 
 Dot-notation keys create nested objects automatically.
+
+### Validation Response (Array Mapping from Errors)
+
+For validation endpoints, map backend error arrays to a response array:
+
+```json
+"body": {
+  "validationResponse": {
+    "$source": "$steps.step-1.body.errors",
+    "$pick": {
+      "field": "$.field",
+      "message": "$.message"
+    }
+  }
+}
+```
 
 ## Mocks
 
@@ -245,6 +364,8 @@ Mock matching priority:
 1. Exact path match on `mock.request.path`
 2. Route pattern match via associated `routeId`
 
+The mock list in the UI displays the full `mock.request.path` (including v1 prefix) for clarity.
+
 ## Database Connections
 
 For routes that query databases directly (MSSQL):
@@ -265,3 +386,59 @@ For routes that query databases directly (MSSQL):
   }
 }
 ```
+
+## Performance & Caching
+
+### Connection Pooling
+
+The orchestrator maintains persistent HTTP/HTTPS connection pools:
+- `keepAlive: true` — Reuses TCP connections
+- `maxSockets: 50` — Up to 50 concurrent connections per host
+- `maxFreeSockets: 10` — Idle connections kept warm
+
+No configuration needed — always active.
+
+### Response Cache
+
+GET requests are cached in-memory with configurable TTL:
+- Only successful responses (2xx/3xx) are cached
+- Cache key: URL + serialized query params
+- Max 1000 entries; expired entries evicted on access
+- Set `CACHE_TTL_MS=0` to disable caching
+
+### Rate Limiting
+
+Applied to `/api` proxy endpoint only:
+- Default: 1000 requests per 60 seconds
+- Returns HTTP 429 with `Retry-After` header when exceeded
+- Set `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` to tune
+
+## Execution Logging
+
+### Log Retention
+
+Controlled by `LOG_RETENTION` env var (default 5000). When the log exceeds this count, oldest entries are pruned.
+
+### What's Logged
+
+Each execution log entry contains:
+- Route ID and name
+- Inbound method, path, query parameters, headers, body
+- Response status code and body
+- Total duration (ms)
+- Step results with per-step:
+  - Status code
+  - Duration (ms)
+  - Response body and headers
+  - Outbound request details (method, URL, headers, params, body)
+- `_backendWallTime` — Wall-clock time for backend calls (handles parallel step overlap)
+
+### Unmatched Request Logging
+
+Requests that don't match any route or mock are logged with:
+- Route ID: `unmatched` or `unmatched-mock`
+- Route name: `[NO MATCH]`
+- Full request details including query parameters
+- 404 status code
+
+This provides visibility into misconfigured paths or unexpected traffic.
