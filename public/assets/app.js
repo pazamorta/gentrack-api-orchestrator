@@ -1275,16 +1275,41 @@ window.deleteMock = deleteMock;
 // ---- Performance ----
 let perfChart = null;
 let perfSelectedRoutes = new Set(); // empty = all selected
+let perfTimeFrom = '';
+let perfTimeTo = '';
 
 async function loadPerformance() {
   await loadPerfChart();
   await loadPerfTable();
 }
 
+function getPerfTimeParams() {
+  let params = '';
+  if (perfTimeFrom) params += `&from=${encodeURIComponent(new Date(perfTimeFrom).toISOString())}`;
+  if (perfTimeTo) params += `&to=${encodeURIComponent(new Date(perfTimeTo).toISOString())}`;
+  return params;
+}
+
+function applyPerfTimeFilter() {
+  perfTimeFrom = document.getElementById('perf-from').value;
+  perfTimeTo = document.getElementById('perf-to').value;
+  loadPerformance();
+}
+
+function clearPerfTimeFilter() {
+  perfTimeFrom = '';
+  perfTimeTo = '';
+  document.getElementById('perf-from').value = '';
+  document.getElementById('perf-to').value = '';
+  loadPerformance();
+}
+
 async function loadPerfChart() {
   try {
-    const routeParam = perfSelectedRoutes.size > 0 ? `?routes=${Array.from(perfSelectedRoutes).join(',')}` : '';
-    const res = await fetch(`${API_BASE}/performance/timeseries${routeParam}`);
+    const routeParam = perfSelectedRoutes.size > 0 ? `routes=${Array.from(perfSelectedRoutes).join(',')}` : '';
+    const timeParams = getPerfTimeParams();
+    const queryStr = [routeParam, timeParams.replace(/^&/, '')].filter(Boolean).join('&');
+    const res = await fetch(`${API_BASE}/performance/timeseries${queryStr ? '?' + queryStr : ''}`);
     const data = await res.json();
     const timeseries = data.timeseries || [];
     const routes = data.routes || [];
@@ -1388,7 +1413,8 @@ let perfSortDir = 'desc';
 async function loadPerfTable() {
   const container = document.getElementById('performance-content');
   try {
-    const res = await fetch(`${API_BASE}/performance`);
+    const timeParams = getPerfTimeParams();
+    const res = await fetch(`${API_BASE}/performance${timeParams ? '?' + timeParams.replace(/^&/, '') : ''}`);
     const data = await res.json();
     perfStats = data.performance || [];
 
@@ -1589,7 +1615,8 @@ function exportPerfSummaryCSV() {
   });
 
   const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
-  downloadCSV(`performance-summary-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  const suffix = perfTimeFrom || perfTimeTo ? `_${perfTimeFrom || 'start'}_to_${perfTimeTo || 'now'}` : '';
+  downloadCSV(`performance-summary-${new Date().toISOString().slice(0, 10)}${suffix}.csv`, csv);
 }
 
 function exportPerfDetailCSV() {
@@ -1620,7 +1647,8 @@ function exportPerfDetailCSV() {
   }
 
   const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
-  downloadCSV(`performance-detail-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  const suffix = perfTimeFrom || perfTimeTo ? `_${perfTimeFrom || 'start'}_to_${perfTimeTo || 'now'}` : '';
+  downloadCSV(`performance-detail-${new Date().toISOString().slice(0, 10)}${suffix}.csv`, csv);
 }
 
 

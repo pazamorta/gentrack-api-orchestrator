@@ -149,7 +149,13 @@
       <section id="tab-performance" class="tab-content">
         <div class="section-header">
           <h2>Performance</h2>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label style="color: var(--text-muted); font-size: 0.85rem;">From:</label>
+            <input type="datetime-local" id="perf-from" style="background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 4px 8px; font-size: 0.85rem;">
+            <label style="color: var(--text-muted); font-size: 0.85rem;">To:</label>
+            <input type="datetime-local" id="perf-to" style="background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius); padding: 4px 8px; font-size: 0.85rem;">
+            <button class="btn btn-secondary btn-sm" onclick="applyPerfTimeFilter()">Apply</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearPerfTimeFilter()">Clear</button>
             <button class="btn btn-secondary" id="export-perf-summary-btn" onclick="exportPerfSummaryCSV()">Export Summary CSV</button>
             <button class="btn btn-secondary" id="export-perf-detail-btn" onclick="exportPerfDetailCSV()">Export Detail CSV</button>
             <button class="btn btn-secondary" id="refresh-performance-btn">Refresh</button>

@@ -555,8 +555,20 @@ router.delete('/mocks/:id', (req: Request, res: Response) => {
 // ============================================================
 
 /** Get performance statistics per route */
-router.get('/performance', (_req: Request, res: Response) => {
-  const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
+router.get('/performance', (req: Request, res: Response) => {
+  let logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
+
+  // Apply time range filter
+  const from = req.query.from ? new Date(req.query.from as string).getTime() : null;
+  const to = req.query.to ? new Date(req.query.to as string).getTime() : null;
+  if (from || to) {
+    logs = logs.filter(entry => {
+      const t = new Date(entry.created_at).getTime();
+      if (from && t < from) return false;
+      if (to && t > to) return false;
+      return true;
+    });
+  }
   const statsMap = new Map<string, {
     routeId: string;
     routeName: string;
@@ -656,9 +668,21 @@ router.get('/performance', (_req: Request, res: Response) => {
 
 /** Get time-series performance data for charting */
 router.get('/performance/timeseries', (req: Request, res: Response) => {
-  const logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
+  let logs = db.getRecentExecutions(parseInt(process.env.LOG_RETENTION || '5000', 10));
   const bucketSize = 1000; // 1-second buckets
   const routeFilter = req.query.routes ? (req.query.routes as string).split(',') : null;
+
+  // Apply time range filter
+  const from = req.query.from ? new Date(req.query.from as string).getTime() : null;
+  const to = req.query.to ? new Date(req.query.to as string).getTime() : null;
+  if (from || to) {
+    logs = logs.filter(entry => {
+      const t = new Date(entry.created_at).getTime();
+      if (from && t < from) return false;
+      if (to && t > to) return false;
+      return true;
+    });
+  }
 
   // Group by time bucket
   const buckets = new Map<number, { count: number; totalDuration: number; totalStepDuration: number }>();
