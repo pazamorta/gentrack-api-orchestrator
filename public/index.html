@@ -149,7 +149,11 @@
       <section id="tab-performance" class="tab-content">
         <div class="section-header">
           <h2>Performance</h2>
-          <button class="btn btn-secondary" id="refresh-performance-btn">Refresh</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="export-perf-summary-btn" onclick="exportPerfSummaryCSV()">Export Summary CSV</button>
+            <button class="btn btn-secondary" id="export-perf-detail-btn" onclick="exportPerfDetailCSV()">Export Detail CSV</button>
+            <button class="btn btn-secondary" id="refresh-performance-btn">Refresh</button>
+          </div>
         </div>
         <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; position: sticky; top: 0; z-index: 10;">
           <canvas id="perf-chart" height="100"></canvas>

@@ -1539,6 +1539,90 @@ function togglePerfAll(checked) {
   loadPerfChart();
 }
 
+// ---- Performance CSV Export ----
+function downloadCSV(filename, csvContent) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function escapeCSV(val) {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function exportPerfSummaryCSV() {
+  if (!perfStats || perfStats.length === 0) {
+    alert('No performance data to export. Refresh the performance tab first.');
+    return;
+  }
+
+  const headers = [
+    'Route', 'Total Calls', 'Success', 'Failed', 'Fail %',
+    'Mean (ms)', 'Std Dev', 'Min', 'Max',
+    'Success Mean', 'Success Std Dev', 'Success Min', 'Success Max',
+    'Failure Mean', 'Failure Std Dev', 'Failure Min', 'Failure Max',
+    'Overhead Mean', 'Overhead Std Dev', 'Overhead Min', 'Overhead Max'
+  ];
+
+  const rows = perfStats.map(stat => {
+    const failRate = stat.callCount > 0 ? Math.round((stat.failureCount / stat.callCount) * 100) : 0;
+    return [
+      stat.routeName,
+      stat.callCount,
+      stat.successCount,
+      stat.failureCount,
+      failRate + '%',
+      stat.all.mean, stat.all.stdDev, stat.all.min, stat.all.max,
+      stat.success.mean, stat.success.stdDev, stat.success.min, stat.success.max,
+      stat.failure.mean, stat.failure.stdDev, stat.failure.min, stat.failure.max,
+      stat.overhead.mean, stat.overhead.stdDev, stat.overhead.min, stat.overhead.max
+    ];
+  });
+
+  const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
+  downloadCSV(`performance-summary-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+}
+
+function exportPerfDetailCSV() {
+  if (!perfStats || perfStats.length === 0) {
+    alert('No performance data to export. Refresh the performance tab first.');
+    return;
+  }
+
+  const headers = [
+    'Route', 'Step', 'Category',
+    'Count', 'Mean (ms)', 'Std Dev', 'Min', 'Max'
+  ];
+
+  const rows = [];
+  for (const stat of perfStats) {
+    // Route-level rows
+    rows.push([stat.routeName, '(total)', 'All', stat.all.count, stat.all.mean, stat.all.stdDev, stat.all.min, stat.all.max]);
+    rows.push([stat.routeName, '(total)', 'Success', stat.success.count, stat.success.mean, stat.success.stdDev, stat.success.min, stat.success.max]);
+    rows.push([stat.routeName, '(total)', 'Failed', stat.failure.count, stat.failure.mean, stat.failure.stdDev, stat.failure.min, stat.failure.max]);
+    rows.push([stat.routeName, '(overhead)', 'All', stat.overhead.count, stat.overhead.mean, stat.overhead.stdDev, stat.overhead.min, stat.overhead.max]);
+
+    // Per-step rows
+    for (const [stepId, stepStat] of Object.entries(stat.steps)) {
+      rows.push([stat.routeName, stepId, 'All', stepStat.all.count, stepStat.all.mean, stepStat.all.stdDev, stepStat.all.min, stepStat.all.max]);
+      rows.push([stat.routeName, stepId, 'Success', stepStat.success.count, stepStat.success.mean, stepStat.success.stdDev, stepStat.success.min, stepStat.success.max]);
+      rows.push([stat.routeName, stepId, 'Failed', stepStat.failure.count, stepStat.failure.mean, stepStat.failure.stdDev, stepStat.failure.min, stepStat.failure.max]);
+    }
+  }
+
+  const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
+  downloadCSV(`performance-detail-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+}
+
 
 // ---- Documentation ----
 async function loadDocsIndex() {
