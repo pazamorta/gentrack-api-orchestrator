@@ -204,7 +204,8 @@ router.post('/import', (req: Request, res: Response) => {
 router.get('/logs', (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const page = parseInt(req.query.page as string) || 1;
-  const { logs, total, totalPages } = db.getPaginatedExecutions(page, limit);
+  const routeFilter = req.query.route as string | undefined;
+  const { logs, total, totalPages } = db.getPaginatedExecutions(page, limit, routeFilter);
   res.json({ logs, pagination: { page, limit, total, totalPages } });
 });
 

@@ -18,7 +18,7 @@
     {
       "id": "gtcx-gcis",
       "name": "GTCX GCIS",
-      "baseUrl": "https://api-uk.integration.gentrack.cloud/v1/junifer/",
+      "baseUrl": "http://localhost:43002/rest/v1/",
       "auth": {
         "type": "None"
       },
@@ -27,12 +27,10 @@
         "x-on-behalf-of",
         "x-trace-id"
       ],
-      "defaultHeaders": {
-        "Host": "api-uk.integration.gentrack.cloud"
-      },
-      "timeout": 5000,
+      "defaultHeaders": {},
+      "timeout": 10000,
       "retry": {
-        "maxRetries": 1,
+        "maxRetries": 3,
         "initialDelayMs": 500,
         "backoffMultiplier": 2
       }

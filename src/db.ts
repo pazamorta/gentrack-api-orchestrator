@@ -230,12 +230,15 @@ export function getRecentExecutions(limit = 50): ExecutionEntry[] {
   return logsStore.executionLog.slice(-limit).reverse();
 }
 
-export function getPaginatedExecutions(page = 1, limit = 50): { logs: ExecutionEntry[]; total: number; totalPages: number } {
-  const total = logsStore.executionLog.length;
+export function getPaginatedExecutions(page = 1, limit = 50, routeFilter?: string): { logs: ExecutionEntry[]; total: number; totalPages: number } {
+  let entries = [...logsStore.executionLog].reverse();
+  if (routeFilter) {
+    entries = entries.filter(e => e.route_id === routeFilter);
+  }
+  const total = entries.length;
   const totalPages = Math.ceil(total / limit);
   const offset = (page - 1) * limit;
-  const reversed = [...logsStore.executionLog].reverse();
-  const logs = reversed.slice(offset, offset + limit);
+  const logs = entries.slice(offset, offset + limit);
   return { logs, total, totalPages };
 }
 

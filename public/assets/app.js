@@ -63,6 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('refresh-logs-btn').addEventListener('click', loadLogs);
   document.getElementById('clear-logs-btn').addEventListener('click', clearLogs);
+  document.getElementById('logs-route-filter').addEventListener('change', (e) => {
+    logsRouteFilter = e.target.value;
+    logsPage = 1;
+    loadLogs();
+  });
   document.getElementById('refresh-audit-btn').addEventListener('click', loadAudit);
   document.getElementById('clear-audit-btn').addEventListener('click', clearAudit);
   document.getElementById('audit-filter-type').addEventListener('change', loadAudit);
@@ -635,17 +640,47 @@ async function deleteMock(id) {
 
 // ---- Logs ----
 let logsPage = 1;
+let logsRouteFilter = '';
 const logsPerPage = 50;
 
 async function loadLogs(page) {
   if (page !== undefined) logsPage = page;
   try {
-    const res = await fetch(`${API_BASE}/logs?limit=${logsPerPage}&page=${logsPage}`);
+    const routeParam = logsRouteFilter ? `&route=${encodeURIComponent(logsRouteFilter)}` : '';
+    const res = await fetch(`${API_BASE}/logs?limit=${logsPerPage}&page=${logsPage}${routeParam}`);
     const data = await res.json();
     renderLogs(data.logs || [], data.pagination);
+    // Populate route filter dropdown
+    populateLogsRouteFilter();
   } catch (err) {
     console.error('Failed to load logs:', err);
   }
+}
+
+async function populateLogsRouteFilter() {
+  const select = document.getElementById('logs-route-filter');
+  if (select.options.length > 1) return; // Already populated
+  try {
+    const res = await fetch(`${API_BASE}/performance`);
+    const data = await res.json();
+    const routes = data.performance || [];
+    routes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.routeId;
+      opt.textContent = r.routeName;
+      if (r.routeId === logsRouteFilter) opt.selected = true;
+      select.appendChild(opt);
+    });
+  } catch { /* ignore */ }
+}
+
+function filterLogsByRoute(routeId) {
+  logsRouteFilter = routeId;
+  logsPage = 1;
+  // Reset dropdown options so it repopulates
+  const select = document.getElementById('logs-route-filter');
+  select.innerHTML = '<option value="">All Routes</option>';
+  loadLogs();
 }
 
 async function clearLogs() {
@@ -1398,7 +1433,7 @@ function renderPerfTable() {
       html += `<td>${stat.all.min}</td>`;
       html += `<td>${stat.all.max}</td>`;
       html += `<td>${stat.overhead.mean} ±${stat.overhead.stdDev}</td>`;
-      html += `<td><button class="btn btn-secondary btn-sm" onclick="togglePerfDetail(${idx})">Details</button></td>`;
+      html += `<td><button class="btn btn-secondary btn-sm" onclick="togglePerfDetail(${idx})">Details</button> <button class="btn btn-secondary btn-sm" onclick="viewLogsForRoute('${stat.routeId}')">Logs</button></td>`;
       html += `</tr>`;
 
       // Expandable detail row
@@ -1443,6 +1478,18 @@ function togglePerfDetail(idx) {
   if (row) {
     row.style.display = row.style.display === 'none' ? '' : 'none';
   }
+}
+
+function viewLogsForRoute(routeId) {
+  logsRouteFilter = routeId;
+  logsPage = 1;
+  // Switch to logs tab
+  const logsBtn = document.querySelector('.nav-btn[data-tab="logs"]');
+  if (logsBtn) logsBtn.click();
+  // Reset and reload
+  const select = document.getElementById('logs-route-filter');
+  select.innerHTML = '<option value="">All Routes</option>';
+  loadLogs();
 }
 
 function togglePerfRoute(routeId) {
