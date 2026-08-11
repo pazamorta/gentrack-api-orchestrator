@@ -629,7 +629,11 @@ async function executeBackendCall(
       // Throw on retryable status codes so retry logic can catch them
       if (retryPolicy.retryableStatusCodes?.includes(response.status)) {
         const err = new Error(`Backend returned ${response.status}`);
-        (err as unknown as { response: { status: number } }).response = { status: response.status };
+        (err as unknown as { response: { status: number; data: unknown; headers: unknown } }).response = {
+          status: response.status,
+          data: response.data,
+          headers: response.headers,
+        };
         throw err;
       }
 
@@ -694,7 +698,17 @@ async function executeBackendCall(
     };
   }
 
-  // All retries exhausted — return error result with request info
+  // All retries exhausted — return the last backend response if available, otherwise generic error
+  const lastErr = retryResult.error as unknown as { response?: { status: number; data: unknown; headers: unknown } };
+  if (lastErr?.response?.status) {
+    return {
+      statusCode: lastErr.response.status,
+      headers: (lastErr.response.headers || {}) as Record<string, string>,
+      body: lastErr.response.data,
+      duration: lastBackendDuration || (Date.now() - startTime),
+      request: lastRequestInfo,
+    };
+  }
   const errorMessage = retryResult.error instanceof Error ? retryResult.error.message : `Backend call "${call.stepId}" failed after ${retryResult.attempts} attempts`;
   return {
     statusCode: 500,
