@@ -2040,26 +2040,22 @@
       "description": "Get the account bills records from Junifer using the Global ID as the account number",
       "steps": [
         {
-          "type": "sequential",
+          "type": "parallel",
           "calls": [
             {
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/billRequests"
-            }
-          ]
-        },
-        {
-          "type": "forEach",
-          "iterateOver": "$steps.step-1.body.results",
-          "filter": "$item.links.bill",
-          "calls": [
+            },
             {
               "stepId": "step-2",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "{{$item.links.bill}}"
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/bills",
+              "queryMapping": {
+                "status": "Draft"
+              }
             }
           ]
         }
@@ -2106,10 +2102,10 @@
                       "value": "Completed"
                     },
                     {
-                      "field": "status",
-                      "source": "$steps.step-2.body",
-                      "operator": "eq",
-                      "value": "Draft"
+                      "field": "billId",
+                      "operator": "in",
+                      "source": "$steps.step-2.body.results",
+                      "sourceField": "id"
                     }
                   ]
                 }
@@ -2162,7 +2158,7 @@
                       {
                         "validationCode": "DRAFT",
                         "validationStatus": "Approvable Error",
-                        "validationDescription": "$steps.step-2.body[$$].draftReason"
+                        "validationDescription": "Pending approval"
                       }
                     ]
                   }

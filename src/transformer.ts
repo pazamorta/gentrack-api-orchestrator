@@ -315,6 +315,21 @@ export function applyArrayMap(config: Record<string, unknown>, context: Orchestr
           return rules.some((rule) => {
             // AND between conditions within a rule
             return rule.conditions.every((cond) => {
+              // Handle 'in' operator separately — it checks if item's field exists in a source array
+              if (cond.operator === 'in') {
+                const itemFieldResults = JSONPath({ path: `$.${cond.field}`, json: filterItem as object });
+                const itemFieldValue = itemFieldResults.length > 0 ? itemFieldResults[0] : undefined;
+                if (itemFieldValue === undefined || itemFieldValue === null) return false;
+                const inSource = resolveValue(cond.source as string, context);
+                if (!Array.isArray(inSource)) return false;
+                const sourceField = (cond as any).sourceField || 'id';
+                return inSource.some((srcItem: unknown) => {
+                  if (!srcItem || typeof srcItem !== 'object') return false;
+                  const srcResults = JSONPath({ path: `$.${sourceField}`, json: srcItem as object });
+                  return srcResults.length > 0 && srcResults[0] == itemFieldValue;
+                });
+              }
+
               let actualValue: unknown;
               if (cond.source) {
                 // Cross-step reference
