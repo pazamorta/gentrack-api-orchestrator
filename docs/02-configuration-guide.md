@@ -79,10 +79,15 @@ Headers are forwarded with proper casing (e.g., `authorization` becomes `Authori
 | `initialDelayMs`    | `500`   | Delay before first retry                 |
 | `backoffMultiplier` | `2`     | Exponential backoff multiplier           |
 | `maxDelayMs`        | `10000` | Maximum delay between retries            |
-| `retryableStatusCodes` | `[408, 429, 502, 503, 504]` | Codes that trigger retry |
+| `retryableStatusCodes` | `[401, 408, 429, 502, 503, 504]` | Codes that trigger retry |
 | `retryOnNetworkError` | `true` | Retry on connection/timeout errors      |
 
 Retry includes 10% jitter to avoid thundering herd.
+
+**Important behaviours:**
+- **401 is retried** — handles transient auth blips. Auth headers are re-resolved on each attempt.
+- **Timeouts are NOT retried** — if the backend exceeds the timeout, the error is returned immediately. Retrying slow backends just adds load and delays the response.
+- **Exhausted retries return the real response** — if all retries fail, the actual backend status code and body are passed through (not a generic 500).
 
 ## Routes
 
@@ -261,6 +266,21 @@ Each call within a step:
 | `bodyMapping`    | Request body built from expressions                        |
 | `bodyTemplate`   | Full body template with literal + dynamic values           |
 | `responseType`   | Axios response type (default `json`, use `arraybuffer` for binary) |
+
+### Query Mapping
+
+Values in `queryMapping` are resolved by `resolveValue`:
+- Expressions starting with `$` are resolved from context (e.g., `"$.inboundRequest.query.fromDate"`)
+- Literal strings without `$` are passed as-is (e.g., `"Draft"` sends `?status=Draft`)
+- `"$now.date"` resolves to today's date
+
+```json
+"queryMapping": {
+  "status": "Draft",
+  "fromDt": "$.inboundRequest.query.fromDate",
+  "effectiveDt": "$now.date"
+}
+```
 
 ### Path Templates
 

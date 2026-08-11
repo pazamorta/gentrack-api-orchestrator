@@ -115,8 +115,11 @@ Configurable retry with exponential backoff:
 
 - Per-backend defaults
 - Per-call overrides
-- Retryable status codes: 408, 429, 502, 503, 504
-- Network error retry with jitter
+- Retryable status codes: 401, 408, 429, 502, 503, 504
+- 401 retried for transient auth blips (re-resolves auth headers each attempt)
+- Network error retry (connection refused, reset, DNS) with jitter
+- **Timeouts are NOT retried** — if the backend is slow, retrying just adds load
+- When all retries are exhausted, the actual backend response (real status code and body) is returned, not a generic 500
 - Default: max 3 retries, 500ms initial delay, 2x backoff multiplier
 
 ### 10. Authentication (`src/auth.ts`)
@@ -257,6 +260,10 @@ The dashboard provides:
 - Sticky chart with scrollable table
 - "Logs" button to jump to filtered execution logs for any route
 - Success/failure breakdown per route and per step
+- **From/To date-time filter** — filter graph, table, and exports by time range (defaults to last 10 minutes)
+- **CSV Export** — two options:
+  - Export Summary: one row per route with all stats
+  - Export Detail: per-route + per-step breakdown with success/failure/overhead
 
 ### Execution Logs
 

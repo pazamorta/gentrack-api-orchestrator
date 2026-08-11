@@ -117,6 +117,79 @@ Filter items before mapping:
 
 Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `exists`, `not-exists`, `contains`, `in-past`, `in-future`
 
+### $crossFilter (Multi-Rule Filter)
+
+Filter items using complex logic with OR between rules and AND within each rule. Supports cross-step references and array membership checks.
+
+```json
+{
+  "$source": "$steps.step-1.body.results",
+  "$crossFilter": {
+    "rules": [
+      {
+        "conditions": [
+          { "field": "statusCode", "operator": "eq", "value": "Failed" }
+        ]
+      },
+      {
+        "conditions": [
+          { "field": "statusCode", "operator": "eq", "value": "Completed" },
+          { "field": "billId", "operator": "in", "source": "$steps.step-2.body.results", "sourceField": "id" }
+        ]
+      }
+    ]
+  },
+  "$pick": { ... }
+}
+```
+
+Rules are evaluated with OR logic — an item passes if **any** rule matches. Within each rule, conditions are AND — **all** conditions must be true.
+
+#### Condition Operators
+
+| Operator     | Description                                          |
+|--------------|------------------------------------------------------|
+| `eq`         | Field equals value                                   |
+| `neq`        | Field does not equal value                           |
+| `gt` / `lt`  | Greater than / less than                            |
+| `exists`     | Field is not null/undefined                          |
+| `not-exists` | Field is null/undefined                              |
+| `in`         | Field value exists in a source array (see below)     |
+
+#### The `in` Operator
+
+Checks if the current item's field value exists within an array from another step:
+
+```json
+{
+  "field": "billId",
+  "operator": "in",
+  "source": "$steps.step-2.body.results",
+  "sourceField": "id"
+}
+```
+
+- `field` — The field on the current item to check
+- `source` — Path to the array to search (resolved from context)
+- `sourceField` — The field within each source array element to match against (default: `"id"`)
+
+This enables join-like behaviour without needing a forEach: fetch a filtered list in one call, then use `in` to match items by key.
+
+#### Cross-Step Reference in Conditions
+
+Use `"source"` on a condition to check a field from another step's result at the same index:
+
+```json
+{
+  "field": "status",
+  "source": "$steps.step-2.body",
+  "operator": "eq",
+  "value": "Draft"
+}
+```
+
+This checks `$steps.step-2.body[currentIndex].status === "Draft"`.
+
 ### $limit
 
 Limit number of results:
