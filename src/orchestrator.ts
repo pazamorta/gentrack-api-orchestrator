@@ -70,7 +70,8 @@ export async function executeOrchestration(
             statusCode: result.statusCode,
             headers: {},
             body: result.body,
-          };
+            backendWallTime: (context as any).totalBackendWallTime || 0,
+          } as any;
         }
       }
 
@@ -83,7 +84,8 @@ export async function executeOrchestration(
               statusCode: result.statusCode,
               headers: {},
               body: result.body,
-            };
+              backendWallTime: (context as any).totalBackendWallTime || 0,
+            } as any;
           }
         }
       }
@@ -101,6 +103,7 @@ export async function executeOrchestration(
         headers: stepResult.headers as Record<string, string>,
         body: stepResult.body,
         raw: true,
+        backendWallTime: (context as any).totalBackendWallTime || 0,
       } as any;
     }
   }
