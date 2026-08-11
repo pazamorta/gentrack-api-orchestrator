@@ -563,6 +563,7 @@ router.get('/performance', (_req: Request, res: Response) => {
     successDurations: number[];
     failureDurations: number[];
     allDurations: number[];
+    backendWallTimes: number[];
     stepDurations: Map<string, { success: number[]; failure: number[] }>;
   }>();
 
@@ -577,6 +578,7 @@ router.get('/performance', (_req: Request, res: Response) => {
         successDurations: [],
         failureDurations: [],
         allDurations: [],
+        backendWallTimes: [],
         stepDurations: new Map(),
       });
     }
@@ -593,20 +595,28 @@ router.get('/performance', (_req: Request, res: Response) => {
     if (entry.step_results) {
       try {
         const steps = JSON.parse(entry.step_results);
+        // Track backend wall time for accurate overhead
+        if (steps._backendWallTime !== undefined) {
+          stat.backendWallTimes.push(steps._backendWallTime);
+        } else {
+          stat.backendWallTimes.push(entry.duration_ms); // fallback: no overhead calculable
+        }
         for (const [stepId, stepData] of Object.entries(steps)) {
+          if (stepId === '_backendWallTime') continue;
           const sd = stepData as { duration?: number; statusCode?: number };
           if (sd && typeof sd.duration === 'number') {
             if (!stat.stepDurations.has(stepId)) {
               stat.stepDurations.set(stepId, { success: [], failure: [] });
             }
             const stepEntry = stat.stepDurations.get(stepId)!;
-            // Use the step's own status code, not the overall response
             const stepSuccess = sd.statusCode !== undefined ? (sd.statusCode >= 200 && sd.statusCode < 400) : isSuccess;
             if (stepSuccess) { stepEntry.success.push(sd.duration); }
             else { stepEntry.failure.push(sd.duration); }
           }
         }
       } catch { /* ignore */ }
+    } else {
+      stat.backendWallTimes.push(entry.duration_ms);
     }
   }
 
@@ -635,7 +645,7 @@ router.get('/performance', (_req: Request, res: Response) => {
       all: calcStats(stat.allDurations),
       success: calcStats(stat.successDurations),
       failure: calcStats(stat.failureDurations),
-      overhead: calcStats(stat.allDurations.map((t) => Math.max(0, t - [...stat.stepDurations.values()].reduce((s, d) => s + ([...d.success, ...d.failure].shift() || 0), 0)))),
+      overhead: calcStats(stat.allDurations.map((t, i) => Math.max(0, t - (stat.backendWallTimes[i] || 0)))),
       steps: stepStats,
     };
   });
