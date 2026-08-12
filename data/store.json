@@ -2611,9 +2611,10 @@
       }
     },
     {
+      "id": "c3ae55ab-44bf-4c2a-9253-a5cc964dcd11",
       "name": "PUT Cancel Account Suspensions",
-      "method": "GET",
-      "path": "/accounts/:globalId",
+      "method": "PUT",
+      "path": "/accounts/:globalId/suspensions",
       "description": "Describe what this route does",
       "logLevel": "debug",
       "steps": [
@@ -2624,7 +2625,7 @@
               "stepId": "step-1",
               "backendId": "junifer-local",
               "method": "GET",
-              "path": "/resource/{{$.inboundRequest.params.id}}"
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalId}}/accountReviewPeriods"
             }
           ]
         }
@@ -2634,8 +2635,7 @@
         "body": {
           "result": "$steps.step-1.body"
         }
-      },
-      "id": "c3ae55ab-44bf-4c2a-9253-a5cc964dcd11"
+      }
     }
   ],
   "databases": [
