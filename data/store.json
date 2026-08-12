@@ -2612,9 +2612,9 @@
     },
     {
       "id": "c3ae55ab-44bf-4c2a-9253-a5cc964dcd11",
-      "name": "PUT Cancel Account Suspensions",
-      "method": "PUT",
-      "path": "/accounts/:globalId/suspensions",
+      "name": "POST Cancel Account Suspensions",
+      "method": "POST",
+      "path": "v1/accounts/:globalId/cancel-suspensions",
       "description": "Cancel an account review period in Junifer mapped from the account suspensions api",
       "logLevel": "debug",
       "steps": [
