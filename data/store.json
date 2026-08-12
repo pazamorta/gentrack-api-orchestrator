@@ -384,8 +384,14 @@
           "balance": {
             "$when": "$.inboundRequest.query.includeBalance",
             "$value": {
-              "accountBalance": "$steps.balance.body.accountBalance",
-              "overdueBalance": "$steps.balance.body.overDueBalance",
+              "accountBalance": {
+                "$resolve": "$steps.balance.body.accountBalance",
+                "$default": 0
+              },
+              "overdueBalance": {
+                "$resolve": "$steps.balance.body.overDueBalance",
+                "$default": 0
+              },
               "unbilledPaymentTotal": 0,
               "unbilledChargesTotal": 0,
               "unbilledCreditsTotal": 0,
