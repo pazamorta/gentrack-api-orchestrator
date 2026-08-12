@@ -2061,7 +2061,7 @@
     },
     {
       "id": "241a9969-c40d-4ef9-8a0c-01e5f553134c",
-      "name": "GET Account Bills Requests",
+      "name": "GET Account Bill Requests",
       "logLevel": "debug",
       "method": "GET",
       "path": "v1/accounts/:globalID/bill-requests",
@@ -2522,15 +2522,41 @@
               "backendId": "junifer-local",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/billRequests"
+            },
+            {
+              "stepId": "step-3",
+              "backendId": "junifer-local",
+              "method": "GET",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/bills"
             }
           ]
         }
       ],
       "responseMapping": {
-        "statusCode": 200,
+        "statusCode": 201,
         "body": {
-          "debug1": "$steps.step-1.body",
-          "debug2": "$steps.step-2.body"
+          "billRequest": {
+            "$source": "$steps.step-2.body.results",
+            "$filter": {
+              "field": "typeCode",
+              "operator": "eq",
+              "value": "Hot"
+            },
+            "$sortBy": "taskCreatedDttm",
+            "$order": "desc",
+            "$first": true,
+            "$fields": {
+              "billRequestId": "$.id",
+              "invoiceId": "$.billId",
+              "isTrial": "$.testFl",
+              "billToDate": {
+                "$date": "$.billPeriodToDttm",
+                "$datePart": "date"
+              },
+              "requestType": "$.typeCode",
+              "status": "$.statusCode"
+            }
+          }
         }
       }
     }
