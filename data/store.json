@@ -7,7 +7,11 @@
       "auth": {
         "type": "None"
       },
-      "defaultHeaders": {},
+      "defaultHeaders": {
+        "Content-Type": "application/json",
+        "X-Junifer-X-username": "api-orchestrator",
+        "X-Junifer-X-apikey": "welcome"
+      },
       "timeout": 5000,
       "retry": {
         "maxRetries": 1,
@@ -380,14 +384,8 @@
           "balance": {
             "$when": "$.inboundRequest.query.includeBalance",
             "$value": {
-              "accountBalance": {
-                "$resolve": "$steps.balance.body.accountBalance",
-                "$default": 0
-              },
-              "overdueBalance": {
-                "$resolve": "$steps.balance.body.overDueBalance",
-                "$default": 0
-              },
+              "accountBalance": "$steps.balance.body.accountBalance",
+              "overdueBalance": "$steps.balance.body.overDueBalance",
               "unbilledPaymentTotal": 0,
               "unbilledChargesTotal": 0,
               "unbilledCreditsTotal": 0,
@@ -2499,6 +2497,40 @@
               "statementPreference.alignedTo": "$steps.step-3.body[$$].number"
             }
           }
+        }
+      }
+    },
+    {
+      "id": "d9b893c7-c1d9-4b45-9a6d-0d46908b2f0b",
+      "name": "POST Account Bill Request",
+      "method": "POST",
+      "path": "/v1/accounts/:globalID/bill-request",
+      "description": "Request instant bill and map to junifer hot bill process",
+      "logLevel": "debug",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "junifer-local",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill"
+            },
+            {
+              "stepId": "step-2",
+              "backendId": "junifer-local",
+              "method": "GET",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/billRequests"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "debug1": "$steps.step-1.body",
+          "debug2": "$steps.step-2.body"
         }
       }
     }
