@@ -2513,21 +2513,15 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "POST",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill"
             },
             {
               "stepId": "step-2",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/billRequests"
-            },
-            {
-              "stepId": "step-3",
-              "backendId": "junifer-local",
-              "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/bills"
             }
           ]
         }
@@ -2535,7 +2529,7 @@
       "responseMapping": {
         "statusCode": 201,
         "body": {
-          "billRequest": {
+          "statement": {
             "$source": "$steps.step-2.body.results",
             "$filter": {
               "field": "typeCode",
@@ -2546,17 +2540,8 @@
             "$order": "desc",
             "$first": true,
             "$fields": {
-              "billRequestId": "$.id",
-              "invoiceId": "$.billId",
-              "isTrial": "$.testFl",
-              "billToDate": {
-                "$date": "$now.date",
-                "$dateAdd": {
-                  "days": 0
-                }
-              },
-              "requestType": "$.typeCode",
-              "status": "$.statusCode"
+              "statementId": "$.id",
+              "isTrial": true
             }
           }
         }
