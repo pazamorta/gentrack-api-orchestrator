@@ -2625,7 +2625,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "DELETE",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalId}}/cancelAccountReviewPeriods",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalId}}/cancelAccountReviewPeriod",
               "queryMapping": {
                 "accountReviewPeriodId": "$.inboundRequest.body.suspensions[0].suspensionId"
               }
