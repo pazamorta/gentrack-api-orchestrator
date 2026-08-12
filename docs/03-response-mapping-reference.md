@@ -343,6 +343,22 @@ Strip time from date values within `$fields`:
 }
 ```
 
+### Context Expressions in $fields
+
+`$fields` supports context expressions like `$now.date`, `$steps.*`, and `$item.*`:
+
+```json
+"$fields": {
+  "billToDate": {
+    "$date": "$now.date",
+    "$dateAdd": { "days": 0 }
+  },
+  "stepValue": "$steps.step-1.body.someField"
+}
+```
+
+Expressions starting with `$` (but not `$.`) are resolved via `resolveValue` against the orchestration context. `$.field` is always resolved relative to the current sorted/filtered item.
+
 ## $switch (Conditional Values)
 
 Map a value to different outputs:
@@ -358,7 +374,31 @@ Map a value to different outputs:
 }
 ```
 
-Works in `$pick`, response mapping body, and nested contexts.
+Works in `$pick`, response mapping body, `bodyTemplate`, and nested contexts.
+
+### $switch in bodyTemplate (Conditional Request Body Fields)
+
+Use `$switch` within `bodyTemplate` to conditionally set values based on forEach item data:
+
+```json
+"bodyTemplate": {
+  "fromDttm": "$now.date",
+  "toDttm": "$item.period.toDate",
+  "reason": "$item.reason",
+  "suppressDunningFl": {
+    "$switch": "$item.suspensionType",
+    "$cases": { "debt-management": true },
+    "$default": false
+  },
+  "suppressBillingFl": {
+    "$switch": "$item.suspensionType",
+    "$cases": { "statement": true },
+    "$default": false
+  }
+}
+```
+
+Note: In `bodyTemplate`, use `$item.field` directly (not `{{$item.field}}`) for values that need to be resolved by `applyMapping`. The `{{}}` template syntax is for URL path templates only.
 
 ## Date Directives
 

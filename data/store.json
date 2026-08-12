@@ -2568,7 +2568,7 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "gtcx-gcis",
+              "backendId": "junifer-local",
               "method": "POST",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/accountReviewPeriods",
               "bodyTemplate": {
@@ -2609,6 +2609,33 @@
           "results": "$steps.step-1.body"
         }
       }
+    },
+    {
+      "name": "PUT Cancel Account Suspensions",
+      "method": "GET",
+      "path": "/accounts/:globalId",
+      "description": "Describe what this route does",
+      "logLevel": "debug",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "junifer-local",
+              "method": "GET",
+              "path": "/resource/{{$.inboundRequest.params.id}}"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "result": "$steps.step-1.body"
+        }
+      },
+      "id": "c3ae55ab-44bf-4c2a-9253-a5cc964dcd11"
     }
   ],
   "databases": [
