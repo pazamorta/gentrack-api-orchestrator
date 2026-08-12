@@ -2568,7 +2568,7 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "POST",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/accountReviewPeriods",
               "bodyTemplate": {
