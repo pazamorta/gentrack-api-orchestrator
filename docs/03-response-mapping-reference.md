@@ -472,6 +472,36 @@ Skip JSON transformation and pass backend response directly:
 
 Preserves original content-type (useful for binary/PDF responses).
 
+## $when (Conditional Field Inclusion)
+
+Conditionally include or exclude a field from the response based on an expression. If the expression resolves to a falsy value (`false`, `"false"`, `"0"`, `""`, `null`, `undefined`), the field is omitted entirely from the response.
+
+```json
+"body": {
+  "balance": {
+    "$when": "$.inboundRequest.query.includeBalance",
+    "$value": {
+      "accountBalance": "$steps.balance.body.accountBalance",
+      "currency": "$steps.balance.body.currencyISO"
+    }
+  },
+  "refundInfo": {
+    "$when": "$.inboundRequest.query.includeRefundInfo",
+    "$value": {
+      "$source": "$steps.transactions.body.results",
+      "$filter": { "field": "type", "operator": "eq", "value": "Repayment" }
+    }
+  }
+}
+```
+
+- `$when` — Expression to evaluate. Typically an inbound query param like `"$.inboundRequest.query.includeX"`
+- `$value` — The actual field content (can be any valid mapping: object, `$source/$pick`, `$sortBy/$fields`, literal, or expression)
+
+When the caller sends `?includeRefundInfo=false`, the `refundInfo` field won't appear in the response at all — not as `null`, just absent. This prevents null dereference errors in consumers that check for field presence.
+
+The `$value` supports all existing mapping features: `$source/$pick`, `$sortBy/$fields`, `$filter`, nested objects, expressions, etc.
+
 ## stripNulls
 
 Remove null/undefined values from the response:
