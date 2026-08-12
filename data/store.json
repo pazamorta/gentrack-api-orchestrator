@@ -32,6 +32,7 @@
         "x-trace-id"
       ],
       "defaultHeaders": {
+        "Content-Type": "application/json",
         "Host": "api-uk.integration.gentrack.cloud"
       },
       "timeout": 5000,
@@ -2521,8 +2522,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill",
-              "headers": { "Content-Type": "application/json" }
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill"
             },
             {
               "stepId": "step-2",
