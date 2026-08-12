@@ -2553,6 +2553,49 @@
           }
         }
       }
+    },
+    {
+      "id": "b54c6ad4-8ba6-45ca-bd21-a6756bf3d449",
+      "name": "POST Account Suspended Activities",
+      "method": "POST",
+      "path": "v1/accounts/:globalID/suspensions",
+      "description": "Create account review periods in Junifer mapped from the account suspensions api",
+      "logLevel": "debug",
+      "steps": [
+        {
+          "type": "forEach",
+          "iterateOver": "$.inboundRequest.body.suspensions",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/accountReviewPeriods",
+              "bodyTemplate": {
+                "fromDt": "$now.date",
+                "toDt": "{{$item.period.toDate}}",
+                "reason": "{{$item.reason}}",
+                "suppressDunningFl": {
+                  "$switch": "$item.suspensionType",
+                  "$cases": { "debt-management": true },
+                  "$default": false
+                },
+                "suppressBillingFl": {
+                  "$switch": "$item.suspensionType",
+                  "$cases": { "statement": true },
+                  "$default": false
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 201,
+        "body": {
+          "results": "$steps.step-1.body"
+        }
+      }
     }
   ],
   "databases": [
