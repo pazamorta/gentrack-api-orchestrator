@@ -237,7 +237,7 @@ Real-time performance data available via `/admin/performance`:
 
 ### Mock Mode
 
-Callers use `/mock/*` prefix to get pre-configured mock responses without hitting real backends. Useful for Salesforce development without backend dependencies.
+Callers use `/mock/*` prefix to get pre-configured mock responses without hitting real backends. Useful for Salesforce development without backend dependencies. Mock paths support `:param` placeholders for matching any URL parameter value.
 
 ## Web Dashboard
 

@@ -10810,7 +10810,7 @@
       "name": "Mock - GET Account Outages",
       "request": {
         "method": "GET",
-        "path": "v1/accounts/00000101/outages",
+        "path": "v1/accounts/:globalID/outages",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"

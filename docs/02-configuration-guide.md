@@ -382,7 +382,23 @@ Pre-configured responses served from `/mock/*`:
 
 Mock matching priority:
 1. Exact path match on `mock.request.path`
-2. Route pattern match via associated `routeId`
+2. Pattern match on `mock.request.path` (supports `:param` placeholders, e.g., `v1/accounts/:globalID/outages`)
+3. Route pattern match via associated `routeId`
+
+Using `:param` placeholders in the mock's `request.path` allows a single mock to serve responses for any value of that parameter — no route definition required:
+
+```json
+{
+  "request": {
+    "method": "GET",
+    "path": "v1/accounts/:globalID/outages"
+  },
+  "response": {
+    "statusCode": 200,
+    "body": { "outages": [] }
+  }
+}
+```
 
 The mock list in the UI displays the full `mock.request.path` (including v1 prefix) for clarity.
 

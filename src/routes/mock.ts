@@ -84,7 +84,17 @@ function findBestMock(method: string, requestPath: string) {
     }
   }
 
-  // Second: try route pattern match (returns first match)
+  // Second: try pattern match on mock's request.path (supports :param placeholders)
+  for (const mock of allMocks) {
+    if (mock.request && mock.request.path) {
+      if (mock.request.method !== method.toUpperCase()) continue;
+      if (matchMockPath(mock.request.path, requestPath)) {
+        return mock;
+      }
+    }
+  }
+
+  // Third: try route pattern match (returns first match)
   for (const mock of allMocks) {
     const route = routes.find((r) => r.id === mock.routeId);
     if (!route) continue;
