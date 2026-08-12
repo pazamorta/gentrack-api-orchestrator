@@ -10779,10 +10779,10 @@
     },
     {
       "routeId": "836acaf7-29e7-4190-8504-576779cdbc2c",
-      "name": "Mock - GET Service Point Outages 1",
+      "name": "Mock - GET Service Point Outages",
       "request": {
         "method": "GET",
-        "path": "v1/service-points/MPAN/1111111111114/outages",
+        "path": "v1/service-points/:externalType/:externalId/outages",
         "headers": {
           "Content-Type": "application/json",
           "Authorization": "Bearer example-token"
@@ -10833,34 +10833,6 @@
       "id": "e940430d-2dfc-4d65-a3ea-95b1ad8bdb3b",
       "createdAt": "2026-08-12T09:37:13.489Z",
       "active": true
-    },
-    {
-      "routeId": "836acaf7-29e7-4190-8504-576779cdbc2c",
-      "name": "Mock - GET Service Point Outages 2",
-      "request": {
-        "method": "GET",
-        "path": "v1/service-points/MPRN/111111/outages",
-        "headers": {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer example-token"
-        },
-        "params": {
-          "externalType": "MPRN",
-          "externalId": "111111"
-        }
-      },
-      "response": {
-        "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "body": {
-          "outages": []
-        }
-      },
-      "active": true,
-      "id": "f42d1c3b-b33e-4097-b97d-4bdc38b0a1bd",
-      "createdAt": "2026-08-12T09:38:59.446Z"
     }
   ]
 }
