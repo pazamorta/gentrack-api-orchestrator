@@ -2065,7 +2065,7 @@
       "logLevel": "debug",
       "method": "GET",
       "path": "v1/accounts/:globalID/bill-requests",
-      "description": "Get the account bills records from Junifer using the Global ID as the account number",
+      "description": "Get the account bills records from Junifer backend using the Global ID as the account number",
       "steps": [
         {
           "type": "parallel",
