@@ -109,6 +109,15 @@ export function applyMapping(
         }
       }
 
+      // Check for $resolve with $default — resolve expression with fallback value
+      if ('$resolve' in obj && '$default' in obj) {
+        const expr = obj['$resolve'] as string;
+        const defaultVal = obj['$default'];
+        const resolved = resolveValue(expr, context);
+        setNestedValue(result, targetKey, (resolved !== undefined && resolved !== null) ? resolved : defaultVal);
+        continue;
+      }
+
       // Check for $dateAdd directive at mapping level
       if ('$dateAdd' in obj && '$date' in obj) {
         const dateConfig = obj as { $date: string; $dateAdd: { days?: number; months?: number; years?: number }; $format?: string };

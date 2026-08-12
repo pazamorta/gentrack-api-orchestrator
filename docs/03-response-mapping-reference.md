@@ -502,6 +502,19 @@ When the caller sends `?includeRefundInfo=false`, the `refundInfo` field won't a
 
 The `$value` supports all existing mapping features: `$source/$pick`, `$sortBy/$fields`, `$filter`, nested objects, expressions, etc.
 
+## $resolve / $default (Default Values)
+
+Resolve an expression with a fallback value when the result is `null` or `undefined`:
+
+```json
+"accountBalance": {
+  "$resolve": "$steps.balance.body.accountBalance",
+  "$default": 0
+}
+```
+
+If `$steps.balance.body.accountBalance` doesn't exist or is null, the field returns `0` instead. Useful for numeric fields where the backend omits zero values rather than returning `0` explicitly.
+
 ## stripNulls
 
 Remove null/undefined values from the response:
