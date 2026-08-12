@@ -86,6 +86,29 @@ export function applyMapping(
     } else if (sourceExpr !== null && typeof sourceExpr === 'object' && !Array.isArray(sourceExpr)) {
       const obj = sourceExpr as Record<string, unknown>;
 
+      // Check for $when conditional — only include field if condition is truthy
+      if ('$when' in obj) {
+        const whenExpr = obj['$when'] as string;
+        const whenValue = resolveValue(whenExpr, context);
+        // Treat "false", "0", "", null, undefined as falsy
+        const isTruthy = whenValue !== undefined && whenValue !== null && whenValue !== false && whenValue !== 'false' && whenValue !== '0' && whenValue !== '';
+        if (!isTruthy) {
+          continue; // Skip this field entirely
+        }
+        // If $value is present, use it as the actual mapping for this field
+        if ('$value' in obj) {
+          const valueExpr = obj['$value'];
+          if (typeof valueExpr === 'string') {
+            setNestedValue(result, targetKey, resolveValue(valueExpr, context));
+          } else if (valueExpr !== null && typeof valueExpr === 'object') {
+            setNestedValue(result, targetKey, applyMapping({ _: valueExpr } as Record<string, unknown>, context)['_']);
+          } else {
+            setNestedValue(result, targetKey, valueExpr);
+          }
+          continue;
+        }
+      }
+
       // Check for $dateAdd directive at mapping level
       if ('$dateAdd' in obj && '$date' in obj) {
         const dateConfig = obj as { $date: string; $dateAdd: { days?: number; months?: number; years?: number }; $format?: string };

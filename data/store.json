@@ -378,122 +378,146 @@
         "statusCode": 200,
         "body": {
           "balance": {
-            "accountBalance": "$steps.balance.body.accountBalance",
-            "overdueBalance": "$steps.balance.body.overDueBalance",
-            "unbilledPaymentTotal": 0,
-            "unbilledChargesTotal": 0,
-            "unbilledCreditsTotal": 0,
-            "unbilledChargesAndCreditTotal": 0,
-            "currency": "$steps.balance.body.currencyISO"
+            "$when": "$.inboundRequest.query.includeBalance",
+            "$value": {
+              "accountBalance": "$steps.balance.body.accountBalance",
+              "overdueBalance": "$steps.balance.body.overDueBalance",
+              "unbilledPaymentTotal": 0,
+              "unbilledChargesTotal": 0,
+              "unbilledCreditsTotal": 0,
+              "unbilledChargesAndCreditTotal": 0,
+              "currency": "$steps.balance.body.currencyISO"
+            }
           },
           "overduePayments": {
-            "$source": "$steps.bills.body.results",
-            "$filter": {
-              "field": "balance",
-              "operator": "gt",
-              "value": 0
-            },
-            "$fields": {
-              "paymentDueDate": "$.dueDt",
-              "amountOverdue": "$.balance",
-              "currency": "$.currency",
-              "daysPastDue": {
-                "$daysSince": "$.dueDt"
+            "$when": "$.inboundRequest.query.includeOverduePayments",
+            "$value": {
+              "$source": "$steps.bills.body.results",
+              "$filter": {
+                "field": "balance",
+                "operator": "gt",
+                "value": 0
+              },
+              "$fields": {
+                "paymentDueDate": "$.dueDt",
+                "amountOverdue": "$.balance",
+                "currency": "$.currency",
+                "daysPastDue": {
+                  "$daysSince": "$.dueDt"
+                }
               }
             }
           },
           "lastBill": {
-            "$source": "$steps.bills.body.results",
-            "$sortBy": "acceptedDttm",
-            "$order": "desc",
-            "$fields": {
-              "billId": "$.id",
-              "type": "Statement",
-              "issueDate": "$.issueDt",
-              "grossAmount": "$.grossAmount",
-              "currency": "$.currency",
-              "finalBill": "$.final",
-              "hasImage": true
+            "$when": "$.inboundRequest.query.includeLastBill",
+            "$value": {
+              "$source": "$steps.bills.body.results",
+              "$sortBy": "acceptedDttm",
+              "$order": "desc",
+              "$fields": {
+                "billId": "$.id",
+                "type": "Statement",
+                "issueDate": "$.issueDt",
+                "grossAmount": "$.grossAmount",
+                "currency": "$.currency",
+                "finalBill": "$.final",
+                "hasImage": true
+              }
             }
           },
           "nextBill": {
-            "billDateUpdatable": false,
-            "nextBillDate": "$steps.nextBill.body.calculatedNextBillPeriodInfo.nextBillIssueDate",
-            "nextBillDateFrequency": "$steps.nextBill.body.frequency"
+            "$when": "$.inboundRequest.query.includeNextBill",
+            "$value": {
+              "billDateUpdatable": false,
+              "nextBillDate": "$steps.nextBill.body.calculatedNextBillPeriodInfo.nextBillIssueDate",
+              "nextBillDateFrequency": "$steps.nextBill.body.frequency"
+            }
           },
           "lastPayment": {
-            "$source": "$steps.payments.body.results",
-            "$sortBy": "acceptedDttm",
-            "$order": "desc",
-            "$first": true,
-            "$fields": {
-              "paymentDate": "$.postedDt",
-              "amount": "$.amount",
-              "currency": "$.currencyISO",
-              "paymentMethod": "$.paymentMethodType",
-              "status": "$.requestStatus"
+            "$when": "$.inboundRequest.query.includeLastPayment",
+            "$value": {
+              "$source": "$steps.payments.body.results",
+              "$sortBy": "acceptedDttm",
+              "$order": "desc",
+              "$first": true,
+              "$fields": {
+                "paymentDate": "$.postedDt",
+                "amount": "$.amount",
+                "currency": "$.currencyISO",
+                "paymentMethod": "$.paymentMethodType",
+                "status": "$.requestStatus"
+              }
             }
           },
           "nextPayment": {
-            "$source": "$steps.transactions.body.results",
-            "$sortBy": "id",
-            "$order": "desc",
-            "$first": true,
-            "$fields": {
-              "paymentDate": "$.nextPaymentDt",
-              "amount": "$.amount",
-              "currency": "$.currencyISO",
-              "paymentMethod": "Direct Debit",
-              "status": "Scheduled"
+            "$when": "$.inboundRequest.query.includeNextPayment",
+            "$value": {
+              "$source": "$steps.transactions.body.results",
+              "$sortBy": "id",
+              "$order": "desc",
+              "$first": true,
+              "$fields": {
+                "paymentDate": "$.nextPaymentDt",
+                "amount": "$.amount",
+                "currency": "$.currencyISO",
+                "paymentMethod": "Direct Debit",
+                "status": "Scheduled"
+              }
             }
           },
           "refundInfo": {
-            "$source": "$steps.transactions.body.results",
-            "$filter": {
-              "field": "type",
-              "operator": "eq",
-              "value": "Repayment"
-            },
-            "$sortBy": "acceptedDttm",
-            "$order": "desc",
-            "$first": true
+            "$when": "$.inboundRequest.query.includeRefundInfo",
+            "$value": {
+              "$source": "$steps.transactions.body.results",
+              "$filter": {
+                "field": "type",
+                "operator": "eq",
+                "value": "Repayment"
+              },
+              "$sortBy": "acceptedDttm",
+              "$order": "desc",
+              "$first": true
+            }
           },
           "statementPreference": {
-            "type.preferenceTypeId": "$steps.nextBill.body.billingCycle",
-            "type.description": "$steps.nextBill.body.billingCycle",
-            "nextRunDate": "$steps.nextBill.body.calculatedNextBillPeriodInfo.billCreatedOn",
-            "runFrequency.frequencyId": "$steps.nextBill.body.frequency",
-            "runFrequency.description": "$steps.nextBill.body.frequency",
-            "dueDay.DueDayId": "$steps.accountPaymentTerms.body.results[0].name",
-            "dueDay.description": "$steps.accountPaymentTerms.body.results[0].name",
-            "preferenceTypeOptions": {
-              "$source": "$steps.billingCycles.body.results",
-              "$limit": 1,
-              "$pick": {
-                "frequencyId": "Default",
-                "description": "Defaults based on Frequency Option"
-              }
-            },
-            "runFrequencyOptions": {
-              "$source": "$steps.billingCycles.body.results",
-              "$pick": {
-                "frequencyId": "$.name",
-                "description": "$.name"
-              }
-            },
-            "dueDayOptions": {
-              "$source": "$steps.paymentTerms.body.results",
-              "$pick": {
-                "dueDayId": "$.name",
-                "description": "$.name"
-              }
-            },
-            "expiryTypeOptions": {
-              "$source": "$steps.paymentTerms.body.results",
-              "$limit": 1,
-              "$pick": {
-                "expiryTypeId": "Default",
-                "description": "Defaults from Due Day option"
+            "$when": "$.inboundRequest.query.includeStatementPreference",
+            "$value": {
+              "type.preferenceTypeId": "$steps.nextBill.body.billingCycle",
+              "type.description": "$steps.nextBill.body.billingCycle",
+              "nextRunDate": "$steps.nextBill.body.calculatedNextBillPeriodInfo.billCreatedOn",
+              "runFrequency.frequencyId": "$steps.nextBill.body.frequency",
+              "runFrequency.description": "$steps.nextBill.body.frequency",
+              "dueDay.DueDayId": "$steps.accountPaymentTerms.body.results[0].name",
+              "dueDay.description": "$steps.accountPaymentTerms.body.results[0].name",
+              "preferenceTypeOptions": {
+                "$source": "$steps.billingCycles.body.results",
+                "$limit": 1,
+                "$pick": {
+                  "frequencyId": "Default",
+                  "description": "Defaults based on Frequency Option"
+                }
+              },
+              "runFrequencyOptions": {
+                "$source": "$steps.billingCycles.body.results",
+                "$pick": {
+                  "frequencyId": "$.name",
+                  "description": "$.name"
+                }
+              },
+              "dueDayOptions": {
+                "$source": "$steps.paymentTerms.body.results",
+                "$pick": {
+                  "dueDayId": "$.name",
+                  "description": "$.name"
+                }
+              },
+              "expiryTypeOptions": {
+                "$source": "$steps.paymentTerms.body.results",
+                "$limit": 1,
+                "$pick": {
+                  "expiryTypeId": "Default",
+                  "description": "Defaults from Due Day option"
+                }
               }
             }
           }
