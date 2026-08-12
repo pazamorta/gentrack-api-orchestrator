@@ -2550,8 +2550,10 @@
               "invoiceId": "$.billId",
               "isTrial": "$.testFl",
               "billToDate": {
-                "$date": "$.billPeriodToDttm",
-                "$datePart": "date"
+                "$date": "$now.date",
+                "$dateAdd": {
+                  "days": 0
+                }
               },
               "requestType": "$.typeCode",
               "status": "$.statusCode"

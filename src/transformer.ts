@@ -978,6 +978,8 @@ function resolveFieldsForItem(item: unknown, fields: Record<string, unknown>, co
       if (dateConfig.$date.startsWith('$.')) {
         const results = JSONPath({ path: dateConfig.$date, json: item as object });
         dateValue = results.length > 0 ? results[0] : undefined;
+      } else if (dateConfig.$date.startsWith('$') && context) {
+        dateValue = resolveValue(dateConfig.$date, context);
       } else {
         dateValue = dateConfig.$date;
       }
@@ -986,6 +988,9 @@ function resolveFieldsForItem(item: unknown, fields: Record<string, unknown>, co
       // Arithmetic calculation
       const calcConfig = (expr as any).$calc as { left: unknown; operator: string; right: unknown; $round?: number };
       picked[field] = computeCalc(calcConfig, item, context!);
+    } else if (typeof expr === 'string' && expr.startsWith('$') && context) {
+      // Context expression ($now, $steps, etc.)
+      picked[field] = resolveValue(expr, context);
     } else if (typeof expr === 'string') {
       picked[field] = expr;
     } else {
