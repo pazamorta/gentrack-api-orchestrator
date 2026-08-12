@@ -10776,6 +10776,91 @@
       },
       "active": true,
       "createdAt": "2026-07-21T14:57:09.539Z"
+    },
+    {
+      "routeId": "836acaf7-29e7-4190-8504-576779cdbc2c",
+      "name": "Mock - GET Service Point Outages 1",
+      "request": {
+        "method": "GET",
+        "path": "v1/service-points/MPAN/1111111111114/outages",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer example-token"
+        },
+        "params": {
+          "externalType": "MPAN",
+          "externalId": "1111111111114"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "outages": []
+        }
+      },
+      "active": true,
+      "createdAt": "2026-08-12T09:32:04.097Z",
+      "id": "6f08d69e-27c1-4986-bee5-70c669faf106"
+    },
+    {
+      "routeId": "get-account",
+      "name": "Mock - GET Account Outages",
+      "request": {
+        "method": "GET",
+        "path": "v1/accounts/00000101/outages",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer example-token"
+        },
+        "params": {
+          "globalID": "00000101"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "outages": []
+        },
+        "active": true,
+        "createdAt": ""
+      },
+      "id": "e940430d-2dfc-4d65-a3ea-95b1ad8bdb3b",
+      "createdAt": "2026-08-12T09:37:13.489Z",
+      "active": true
+    },
+    {
+      "routeId": "836acaf7-29e7-4190-8504-576779cdbc2c",
+      "name": "Mock - GET Service Point Outages 2",
+      "request": {
+        "method": "GET",
+        "path": "v1/service-points/MPRN/111111/outages",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer example-token"
+        },
+        "params": {
+          "externalType": "MPRN",
+          "externalId": "111111"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "outages": []
+        }
+      },
+      "active": true,
+      "id": "f42d1c3b-b33e-4097-b97d-4bdc38b0a1bd",
+      "createdAt": "2026-08-12T09:38:59.446Z"
     }
   ]
 }
