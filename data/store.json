@@ -2521,7 +2521,8 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill"
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/hotBill",
+              "headers": { "Content-Type": "application/json" }
             },
             {
               "stepId": "step-2",
