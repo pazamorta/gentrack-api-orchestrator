@@ -2627,7 +2627,7 @@
               "method": "DELETE",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalId}}/cancelAccountReviewPeriods",
               "queryMapping": {
-                "accountReviewPeriodId": "$.inboundRequest.body.suspensionId"
+                "accountReviewPeriodId": "$.inboundRequest.body.suspensions[0].suspensionId"
               }
             }
           ]
