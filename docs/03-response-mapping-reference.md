@@ -557,7 +557,7 @@ If `$steps.balance.body.accountBalance` doesn't exist or is null, the field retu
 
 ## stripNulls
 
-Remove null/undefined values from the response:
+Remove null/undefined values and empty arrays from the response:
 
 ```json
 "responseMapping": {
@@ -565,6 +565,57 @@ Remove null/undefined values from the response:
   "body": { ... }
 }
 ```
+
+When enabled:
+- `null` and `undefined` values are removed from objects
+- Empty arrays `[]` are removed from object properties
+- Useful for omitting optional fields (like `scheduledPayments`) when they have no data
+
+## Conditional arrayBody ($cases)
+
+Return different array shapes based on conditions. Each case has a `$condition` expression — the first matching case wins:
+
+```json
+"responseMapping": {
+  "statusCode": 200,
+  "stripNulls": true,
+  "arrayBody": [
+    {
+      "$condition": "$steps.step-3.body.results[0]",
+      "$requireAlso": "$steps.step-1.body.results[0]",
+      "$arrayBody": {
+        "$source": "$steps.step-1.body.results",
+        "$pick": {
+          "arrangementType": "Ongoing and Debt",
+          "scheduledPayments": { "$source": "$steps.step-4.body[*].results[*]", "$pick": { ... } }
+        }
+      }
+    },
+    {
+      "$condition": "$steps.step-1.body.results[0]",
+      "$arrayBody": {
+        "$source": "$steps.step-1.body.results",
+        "$pick": { "arrangementType": "Ongoing" }
+      }
+    },
+    {
+      "$condition": "$steps.step-3.body.results[0]",
+      "$arrayBody": {
+        "$source": "$steps.step-3.body.results",
+        "$pick": { "arrangementType": "Debt" }
+      }
+    }
+  ]
+}
+```
+
+- `$condition` — Expression that must resolve to truthy for the case to match
+- `$requireAlso` — Optional AND condition (both `$condition` and `$requireAlso` must be truthy)
+- `$arrayBody` — The `$source/$pick` mapping to use when this case matches
+- Cases are evaluated in order — first match wins
+- If no case matches, an empty array `[]` is returned
+
+This enables conditional response shapes without custom code — useful for routes that need different response structures based on what data exists.
 
 ## Complete Example
 

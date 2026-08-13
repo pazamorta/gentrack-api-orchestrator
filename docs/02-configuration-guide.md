@@ -342,6 +342,24 @@ If the backend returns a status in `$when`, the response returns `$override`. Ot
 
 Dot-notation keys create nested objects automatically.
 
+### arrayBody
+
+Return a bare array (not wrapped in an object):
+
+```json
+"responseMapping": {
+  "statusCode": 200,
+  "arrayBody": {
+    "$source": "$steps.step-1.body.results",
+    "$pick": { "id": "$.id", "name": "$.name" }
+  }
+}
+```
+
+Response: `[{"id": 1, "name": "..."}, ...]`
+
+Also supports conditional cases — see Response Mapping Reference for `$cases` with `$condition`/`$requireAlso`.
+
 ### Validation Response (Array Mapping from Errors)
 
 For validation endpoints, map backend error arrays to a response array:

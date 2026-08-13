@@ -1812,19 +1812,19 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "gtcx-gcis",
+              "backendId": "junifer-local",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods"
             },
             {
               "stepId": "step-2",
-              "backendId": "gtcx-gcis",
+              "backendId": "junifer-local",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentMethods"
             },
             {
               "stepId": "step-3",
-              "backendId": "gtcx-gcis",
+              "backendId": "junifer-local",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlans"
             }
@@ -1836,7 +1836,7 @@
           "calls": [
             {
               "stepId": "step-4",
-              "backendId": "gtcx-gcis",
+              "backendId": "junifer-local",
               "method": "GET",
               "path": "{{$item.links.paymentPlanPayments}}"
             }
@@ -1846,43 +1846,102 @@
       "responseMapping": {
         "statusCode": "$steps.step-1.statusCode",
         "stripNulls": true,
-        "arrayBody": {
-          "$source": "$steps.step-1.body.results",
-          "$filter": {
-            "field": "toDt",
-            "operator": "not-exists"
-          },
-          "$pick": {
-            "globalReference": "$.id",
-            "arrangementType": "Ongoing",
-            "paymentDay": {
-              "$date": "$.frequencyAlignmentDt",
-              "$datePart": "day"
-            },
-            "paymentMethod.method": "$steps.step-2.body.results[0].paymentMethodType",
-            "paymentMethod.currency": "$.currencyISO",
-            "paymentMethod.effectiveDate": "$steps.step-2.body.results[0].fromDttm",
-            "agreementReference": "$.id",
-            "agreementDate": "$.createdDttm",
-            "nextPayment.paymentDate": "$.nextPaymentDt",
-            "nextPayment.amount": "$.amount",
-            "nextPayment.currency": "$.currencyISO",
-            "nextPayment.paymentMethod": "$steps.step-2.body.results[0].paymentMethodType",
-            "nextPayment.status": "Scheduled",
-            "scheduledPayments": {
-              "$source": "$steps.step-4.body[*].results[*]",
+        "arrayBody": [
+          {
+            "$condition": "$steps.step-3.body.results[0]",
+            "$requireAlso": "$steps.step-1.body.results[0]",
+            "$arrayBody": {
+              "$source": "$steps.step-1.body.results",
+              "$filter": {
+                "field": "toDt",
+                "operator": "not-exists"
+              },
               "$pick": {
-                "id": "$.id",
-                "paymentDate": "$.scheduledDt",
-                "balance": "$.balance",
-                "currency": "$.currencyISO",
-                "type": "Fixed",
-                "directDebitScheduled": true,
-                "arrangementPayment": true
+                "globalReference": "$.id",
+                "arrangementType": "Ongoing and Debt",
+                "paymentDay": {
+                  "$date": "$.frequencyAlignmentDt",
+                  "$datePart": "day"
+                },
+                "paymentMethod.method": "$steps.step-2.body.results[0].paymentMethodType",
+                "paymentMethod.currency": "$.currencyISO",
+                "paymentMethod.effectiveDate": "$steps.step-2.body.results[0].fromDttm",
+                "agreementReference": "$.id",
+                "agreementDate": "$.createdDttm",
+                "nextPayment.paymentDate": "$.nextPaymentDt",
+                "nextPayment.amount": "$.amount",
+                "nextPayment.currency": "$.currencyISO",
+                "nextPayment.paymentMethod": "$steps.step-2.body.results[0].paymentMethodType",
+                "nextPayment.status": "Scheduled",
+                "scheduledPayments": {
+                  "$source": "$steps.step-4.body[*].results[*]",
+                  "$pick": {
+                    "id": "$.id",
+                    "paymentDate": "$.scheduledDt",
+                    "balance": "$.balance",
+                    "currency": "$.currencyISO",
+                    "type": "Fixed",
+                    "directDebitScheduled": true,
+                    "arrangementPayment": true
+                  }
+                }
+              }
+            }
+          },
+          {
+            "$condition": "$steps.step-1.body.results[0]",
+            "$arrayBody": {
+              "$source": "$steps.step-1.body.results",
+              "$filter": {
+                "field": "toDt",
+                "operator": "not-exists"
+              },
+              "$pick": {
+                "globalReference": "$.id",
+                "arrangementType": "Ongoing",
+                "paymentDay": {
+                  "$date": "$.frequencyAlignmentDt",
+                  "$datePart": "day"
+                },
+                "paymentMethod.method": "$steps.step-2.body.results[0].paymentMethodType",
+                "paymentMethod.currency": "$.currencyISO",
+                "paymentMethod.effectiveDate": "$steps.step-2.body.results[0].fromDttm",
+                "agreementReference": "$.id",
+                "agreementDate": "$.createdDttm",
+                "nextPayment.paymentDate": "$.nextPaymentDt",
+                "nextPayment.amount": "$.amount",
+                "nextPayment.currency": "$.currencyISO",
+                "nextPayment.paymentMethod": "$steps.step-2.body.results[0].paymentMethodType",
+                "nextPayment.status": "Scheduled"
+              }
+            }
+          },
+          {
+            "$condition": "$steps.step-3.body.results[0]",
+            "$arrayBody": {
+              "$source": "$steps.step-3.body.results",
+              "$pick": {
+                "globalReference": "$.id",
+                "arrangementType": "Debt",
+                "paymentMethod": null,
+                "agreementReference": "$.id",
+                "agreementDate": "$.createdDttm",
+                "scheduledPayments": {
+                  "$source": "$steps.step-4.body[*].results[*]",
+                  "$pick": {
+                    "id": "$.id",
+                    "paymentDate": "$.scheduledDt",
+                    "balance": "$.balance",
+                    "currency": "$.currencyISO",
+                    "type": "Fixed",
+                    "directDebitScheduled": true,
+                    "arrangementPayment": true
+                  }
+                }
               }
             }
           }
-        }
+        ]
       }
     },
     {

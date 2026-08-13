@@ -45,6 +45,7 @@ The dashboard is protected by Basic Auth / session cookie authentication:
 - Credentials configurable via `ADMIN_USER` and `ADMIN_PASS` environment variables
 - Default: `admin` / `welcome`
 - Logout clears the cookie and redirects to login
+- **Session heartbeat**: When an edit modal is open, a background ping every 5 minutes keeps the session alive to prevent losing unsaved work
 
 ### 3. Orchestrator (`src/orchestrator.ts`)
 

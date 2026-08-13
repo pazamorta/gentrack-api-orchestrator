@@ -112,7 +112,39 @@ export async function executeOrchestration(
   let responseBody: unknown;
   if (route.responseMapping.arrayBody) {
     const { applyArrayMap } = require('./transformer');
-    responseBody = applyArrayMap(route.responseMapping.arrayBody, context);
+    const arrayConfig = route.responseMapping.arrayBody;
+    
+    // Support conditional arrayBody with $cases
+    if (Array.isArray(arrayConfig) && arrayConfig.length > 0 && arrayConfig[0].$condition) {
+      // Evaluate each case — first matching condition wins
+      let matched = false;
+      for (const caseConfig of arrayConfig) {
+        const condExpr = caseConfig.$condition as string;
+        const condValue = resolveValue(condExpr, context);
+        const isTruthy = condValue !== undefined && condValue !== null && condValue !== false && condValue !== 'false' && condValue !== '0' && condValue !== '';
+        // Support arrays: truthy if non-empty array
+        const isArrayTruthy = Array.isArray(condValue) ? condValue.length > 0 : isTruthy;
+        
+        if (isArrayTruthy) {
+          // Check $requireAlso (AND condition)
+          if (caseConfig.$requireAlso) {
+            const alsoValue = resolveValue(caseConfig.$requireAlso as string, context);
+            const alsoTruthy = alsoValue !== undefined && alsoValue !== null && alsoValue !== false && alsoValue !== 'false' && alsoValue !== '0' && alsoValue !== '';
+            const alsoArrayTruthy = Array.isArray(alsoValue) ? alsoValue.length > 0 : alsoTruthy;
+            if (!alsoArrayTruthy) continue; // AND condition not met, skip to next case
+          }
+          
+          responseBody = applyArrayMap(caseConfig.$arrayBody, context);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        responseBody = []; // No case matched — return empty array
+      }
+    } else {
+      responseBody = applyArrayMap(arrayConfig, context);
+    }
   } else {
     responseBody = buildResponse(route.responseMapping.body, context);
   }
