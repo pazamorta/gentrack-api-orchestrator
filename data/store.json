@@ -1834,12 +1834,14 @@
               "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
                 "account.id": "$steps.get-account.body.id",
+                "fromDt": "$now.date",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
                 "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
                 "currencyISO": "$.inboundRequest.body.currency",
                 "frequencyMultiple": 1,
-                "seasonalPaymentFl": false
+                "seasonalPaymentFl": false,
+                "ignoreWarnings": true
               }
             }
           ],
@@ -1882,12 +1884,14 @@
               "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
                 "account.id": "$steps.get-account.body.id",
+                "fromDt": "$now.date",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
                 "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
                 "currencyISO": "$.inboundRequest.body.currency",
                 "frequencyMultiple": 1,
-                "seasonalPaymentFl": false
+                "seasonalPaymentFl": false,
+                "ignoreWarnings": true
               }
             },
             {
