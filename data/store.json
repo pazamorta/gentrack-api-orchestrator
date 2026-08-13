@@ -1809,6 +1809,17 @@
       "suppressErrorPassthrough": true,
       "steps": [
         {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "get-account",
+              "backendId": "gtcx-gcis",
+              "method": "GET",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}"
+            }
+          ]
+        },
+        {
           "type": "conditional",
           "condition": {
             "expression": "$.inboundRequest.body.arrangementType",
@@ -1820,8 +1831,9 @@
               "stepId": "step-ongoing",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
+                "account.id": "$steps.get-account.body.id",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
                 "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
@@ -1867,8 +1879,9 @@
               "stepId": "step-ongoing",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
+                "account.id": "$steps.get-account.body.id",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
                 "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
