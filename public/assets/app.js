@@ -1833,6 +1833,15 @@ function formatInline(text) {
 }
 
 
+// ---- Session heartbeat ----
+// Keep session alive while an edit modal is open (prevents losing unsaved work)
+setInterval(() => {
+  const modal = document.getElementById('modal');
+  if (modal && !modal.classList.contains('hidden') && modalSaveCallback) {
+    fetch('/admin/backends').catch(() => {});
+  }
+}, 5 * 60 * 1000); // Every 5 minutes
+
 // ---- Session check ----
 // Intercept all fetch calls — if we get a 401, redirect to login
 const originalFetch = window.fetch;
