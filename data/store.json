@@ -1826,7 +1826,13 @@
               "stepId": "step-3",
               "backendId": "junifer-local",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlans"
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlans",
+              "responseFilter": {
+                "path": "results",
+                "field": "status",
+                "operator": "neq",
+                "value": "Cancelled"
+              }
             }
           ]
         },
