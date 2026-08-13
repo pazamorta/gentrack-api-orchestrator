@@ -732,6 +732,8 @@ function stripNullValues(obj: unknown): unknown {
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       const stripped = stripNullValues(value);
       if (stripped !== undefined && stripped !== null) {
+        // Also strip empty arrays from object properties
+        if (Array.isArray(stripped) && stripped.length === 0) continue;
         result[key] = stripped;
       }
     }

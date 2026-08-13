@@ -1845,6 +1845,7 @@
       ],
       "responseMapping": {
         "statusCode": "$steps.step-1.statusCode",
+        "stripNulls": true,
         "body": {
           "paymentArrangements": {
             "$source": "$steps.step-1.body.results",
@@ -1870,15 +1871,18 @@
               "nextPayment.paymentMethod": "$steps.step-2.body.results[0].paymentMethodType",
               "nextPayment.status": "Scheduled",
               "scheduledPayments": {
-                "$source": "$steps.step-4.body[*].results[*]",
-                "$pick": {
-                  "id": "$.id",
-                  "paymentDate": "$.scheduledDt",
-                  "balance": "$.balance",
-                  "currency": "$.currencyISO",
-                  "type": "Fixed",
-                  "directDebitScheduled": true,
-                  "arrangementPayment": true
+                "$when": "$steps.step-3.body.results[0]",
+                "$value": {
+                  "$source": "$steps.step-4.body[*].results[*]",
+                  "$pick": {
+                    "id": "$.id",
+                    "paymentDate": "$.scheduledDt",
+                    "balance": "$.balance",
+                    "currency": "$.currencyISO",
+                    "type": "Fixed",
+                    "directDebitScheduled": true,
+                    "arrangementPayment": true
+                  }
                 }
               }
             }
