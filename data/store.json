@@ -1871,18 +1871,15 @@
               "nextPayment.paymentMethod": "$steps.step-2.body.results[0].paymentMethodType",
               "nextPayment.status": "Scheduled",
               "scheduledPayments": {
-                "$when": "$steps.step-3.body.results[0]",
-                "$value": {
-                  "$source": "$steps.step-4.body[*].results[*]",
-                  "$pick": {
-                    "id": "$.id",
-                    "paymentDate": "$.scheduledDt",
-                    "balance": "$.balance",
-                    "currency": "$.currencyISO",
-                    "type": "Fixed",
-                    "directDebitScheduled": true,
-                    "arrangementPayment": true
-                  }
+                "$source": "$steps.step-4.body[*].results[*]",
+                "$pick": {
+                  "id": "$.id",
+                  "paymentDate": "$.scheduledDt",
+                  "balance": "$.balance",
+                  "currency": "$.currencyISO",
+                  "type": "Fixed",
+                  "directDebitScheduled": true,
+                  "arrangementPayment": true
                 }
               }
             }
