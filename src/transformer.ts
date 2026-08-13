@@ -1150,6 +1150,11 @@ function resolveCalcOperand(operand: unknown, item: unknown, context: Orchestrat
  * Set a nested value using dot notation: "user.name" -> { user: { name: value } }
  */
 function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+  // If key is wrapped in [] brackets, use it as a literal key (no dot nesting)
+  if (path.startsWith('[') && path.endsWith(']')) {
+    obj[path.slice(1, -1)] = value;
+    return;
+  }
   const parts = path.split('.');
   let current: Record<string, unknown> = obj;
 

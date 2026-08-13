@@ -325,7 +325,7 @@
               "stepId": "nextPayment",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "path": "/paymentSchedulePeriods",
               "queryMapping": {},
               "bodyMapping": {}
             },
@@ -1345,7 +1345,7 @@
               "stepId": "step-2",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "path": "/paymentSchedulePeriods",
               "headers": {},
               "queryMapping": {},
               "bodyMapping": {}
@@ -1833,7 +1833,7 @@
               "method": "POST",
               "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
-                "account.id": "$steps.get-account.body.id",
+                "[account.id]": "$steps.get-account.body.id",
                 "fromDt": "$now.date",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
@@ -1859,10 +1859,17 @@
               "stepId": "step-debt",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/createPaymentPlan",
               "bodyTemplate": {
                 "paymentFrequency.frequencyMultiple": 1,
-                "paymentFrequency.frequencyType": "$.inboundRequest.body.frequency",
+                "paymentFrequency.frequencyType": {
+                  "$switch": "$.inboundRequest.body.frequency",
+                  "$cases": {
+                    "Monthly": "Months",
+                    "Weekly": "Weeks"
+                  },
+                  "$default": "$.inboundRequest.body.frequency"
+                },
                 "paymentFrequency.paymentAmount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "firstPaymentDate": "$.inboundRequest.body.firstPaymentDate",
                 "payments.collectType": "AutoActive",
@@ -1886,7 +1893,7 @@
               "method": "POST",
               "path": "/paymentSchedulePeriods",
               "bodyTemplate": {
-                "account.id": "$steps.get-account.body.id",
+                "[account.id]": "$steps.get-account.body.id",
                 "fromDt": "$now.date",
                 "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "frequency": "$.inboundRequest.body.frequency",
@@ -1901,10 +1908,17 @@
               "stepId": "step-debt",
               "backendId": "gtcx-gcis",
               "method": "POST",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/createPaymentPlan",
               "bodyTemplate": {
                 "paymentFrequency.frequencyMultiple": 1,
-                "paymentFrequency.frequencyType": "$.inboundRequest.body.frequency",
+                "paymentFrequency.frequencyType": {
+                  "$switch": "$.inboundRequest.body.frequency",
+                  "$cases": {
+                    "Monthly": "Months",
+                    "Weekly": "Weeks"
+                  },
+                  "$default": "$.inboundRequest.body.frequency"
+                },
                 "paymentFrequency.paymentAmount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
                 "firstPaymentDate": "$.inboundRequest.body.firstPaymentDate",
                 "payments.collectType": "AutoActive",
@@ -1939,7 +1953,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods"
+              "path": "/paymentSchedulePeriods"
             },
             {
               "stepId": "step-2",
@@ -2148,7 +2162,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "path": "/paymentSchedulePeriods",
               "forwardHeaders": true,
               "headers": {
                 "Host": "api-uk.integration.gentrack.cloud"
