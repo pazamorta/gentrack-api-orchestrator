@@ -1800,6 +1800,108 @@
       }
     },
     {
+      "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+      "name": "POST Account Payment Arrangements",
+      "logLevel": "debug",
+      "method": "POST",
+      "path": "v1/accounts/:globalID/payment-arrangements",
+      "description": "Create payment arrangements - routes to paymentSchedulePeriods and/or paymentPlan based on arrangementType",
+      "suppressErrorPassthrough": true,
+      "steps": [
+        {
+          "type": "conditional",
+          "condition": {
+            "expression": "$.inboundRequest.body.arrangementType",
+            "operator": "eq",
+            "value": "Ongoing"
+          },
+          "calls": [
+            {
+              "stepId": "step-ongoing",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "bodyTemplate": {
+                "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
+                "frequency": "$.inboundRequest.body.frequency",
+                "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
+                "currencyISO": "$.inboundRequest.body.currency",
+                "frequencyMultiple": 1,
+                "seasonalPaymentFl": false
+              }
+            }
+          ],
+          "fallbackCalls": []
+        },
+        {
+          "type": "conditional",
+          "condition": {
+            "expression": "$.inboundRequest.body.arrangementType",
+            "operator": "eq",
+            "value": "Debt"
+          },
+          "calls": [
+            {
+              "stepId": "step-debt",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
+              "bodyTemplate": {
+                "collectType": "AutoActive",
+                "currency": "$.inboundRequest.body.currency",
+                "scheduledPayments": "$.inboundRequest.body.paymentBreakdown"
+              }
+            }
+          ],
+          "fallbackCalls": []
+        },
+        {
+          "type": "conditional",
+          "condition": {
+            "expression": "$.inboundRequest.body.arrangementType",
+            "operator": "eq",
+            "value": "Ongoing and Debt"
+          },
+          "calls": [
+            {
+              "stepId": "step-ongoing",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
+              "bodyTemplate": {
+                "amount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
+                "frequency": "$.inboundRequest.body.frequency",
+                "frequencyAlignmentDt": "$.inboundRequest.body.firstPaymentDate",
+                "currencyISO": "$.inboundRequest.body.currency",
+                "frequencyMultiple": 1,
+                "seasonalPaymentFl": false
+              }
+            },
+            {
+              "stepId": "step-debt",
+              "backendId": "gtcx-gcis",
+              "method": "POST",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
+              "bodyTemplate": {
+                "collectType": "AutoActive",
+                "currency": "$.inboundRequest.body.currency",
+                "scheduledPayments": "$.inboundRequest.body.paymentBreakdown"
+              }
+            }
+          ],
+          "fallbackCalls": []
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 201,
+        "body": {
+          "arrangementType": "$.inboundRequest.body.arrangementType",
+          "ongoingResult": "$steps.step-ongoing.body",
+          "debtResult": "$steps.step-debt.body"
+        }
+      }
+    },
+    {
       "id": "7a936bb7-65f7-451b-982d-5590e2592c31",
       "name": "GET Account Payment Arrangements",
       "logLevel": "debug",
