@@ -1812,19 +1812,19 @@
           "calls": [
             {
               "stepId": "step-1",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods"
             },
             {
               "stepId": "step-2",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentMethods"
             },
             {
               "stepId": "step-3",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlans",
               "responseFilter": {
@@ -1842,7 +1842,7 @@
           "calls": [
             {
               "stepId": "step-4",
-              "backendId": "junifer-local",
+              "backendId": "gtcx-gcis",
               "method": "GET",
               "path": "{{$item.links.paymentPlanPayments}}"
             }
