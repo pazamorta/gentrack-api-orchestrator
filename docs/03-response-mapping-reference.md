@@ -70,6 +70,23 @@ Produces:
 }
 ```
 
+### Literal Dot Keys (Escape Nesting)
+
+If the backend expects a literal dot in the key name (no nesting), wrap the key in square brackets:
+
+```json
+"[account.id]": "$steps.get-account.body.id"
+```
+
+Produces:
+```json
+{
+  "account.id": 136
+}
+```
+
+Without brackets, `"account.id"` would create `{"account": {"id": 136}}`. Use `[...]` when the API literally expects a dot in the field name.
+
 ## Array Transformations ($source/$pick)
 
 Transform an array of items into a new array shape.
