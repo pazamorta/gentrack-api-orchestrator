@@ -1861,9 +1861,12 @@
               "method": "POST",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
               "bodyTemplate": {
-                "collectType": "AutoActive",
-                "currency": "$.inboundRequest.body.currency",
-                "scheduledPayments": "$.inboundRequest.body.paymentBreakdown"
+                "paymentFrequency.frequencyMultiple": 1,
+                "paymentFrequency.frequencyType": "$.inboundRequest.body.frequency",
+                "paymentFrequency.paymentAmount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
+                "firstPaymentDate": "$.inboundRequest.body.firstPaymentDate",
+                "payments.collectType": "AutoActive",
+                "ignoreWarnings": true
               }
             }
           ],
@@ -1900,9 +1903,12 @@
               "method": "POST",
               "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentPlan",
               "bodyTemplate": {
-                "collectType": "AutoActive",
-                "currency": "$.inboundRequest.body.currency",
-                "scheduledPayments": "$.inboundRequest.body.paymentBreakdown"
+                "paymentFrequency.frequencyMultiple": 1,
+                "paymentFrequency.frequencyType": "$.inboundRequest.body.frequency",
+                "paymentFrequency.paymentAmount": "$.inboundRequest.body.paymentBreakdown[0].paymentAmount",
+                "firstPaymentDate": "$.inboundRequest.body.firstPaymentDate",
+                "payments.collectType": "AutoActive",
+                "ignoreWarnings": true
               }
             }
           ],
