@@ -41,6 +41,43 @@
         "initialDelayMs": 500,
         "backoffMultiplier": 2
       }
+    },
+    {
+      "name": "Factor",
+      "baseUrl": "https://api.example.com",
+      "auth": {
+        "type": "oauth2",
+        "oauth2": {
+          "tokenUrl": "https://auth.example.com/oauth/token",
+          "clientId": "your-client-id",
+          "clientSecret": "your-client-secret",
+          "scope": ""
+        }
+      },
+      "defaultHeaders": {},
+      "timeout": 10000,
+      "retry": {
+        "maxRetries": 3,
+        "initialDelayMs": 500,
+        "backoffMultiplier": 2
+      },
+      "id": "f5d8b1a0-addc-452e-8e91-f144b9b882d4"
+    },
+    {
+      "name": "Product Builder",
+      "baseUrl": "https://demo.api.product-builder.demo.gentrack.cloud",
+      "auth": {
+        "type": "bearer",
+        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ii1LWWY1RlV6VDRKRjRQU19FRjNuRyJ9.eyJpc3MiOiJodHRwczovL2lkZW50aXR5LmRlbW8uZ2VudHJhY2suY2xvdWQvIiwic3ViIjoid2FhZHxJUUlzc2R4Q3lSZDlBT3ltYzl6LU5GcC1sUThDeTJWdm5zcXRQX1RGa3o4IiwiYXVkIjpbIkRFTU8tYjd4UlNFeXF1Z2pnT0RqMWtnT2lMIiwiaHR0cHM6Ly9nZW50cmFjay1kZW1vLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3ODc2NDkwMDEsImV4cCI6MTc4NzczNTQwMSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6ImFsSklDb0sxOGF2bGZSSlJIdVl6dFJSR2pzU3VJSXBvIn0.jBMuFx6NC9ROWcCaXM5KPnOLgUVgWkf3Hq2JQ6IDNfLeHetv8KauKvHeeOsNKCHHyAC1gZXtH0HRjAsOm-o5BObBUExKhM_Swqg8MO-RCK0TwQTAq7T0gPFLw1uxZazsexpXIqfILj984W_CRe-C0T9vEt-aggGyLpcK4ZYmbueTgmt0xJoCFJzivfZ_tB7ulTagjTePDSaTTtbfcGxR2f7WIQoBiVb8QX-ynbqmgHiNfikUIlXbhcV9jSBa9oCSbU4sbNvkga9MJ37q8KUcq_d3buJ1dV3Mlt4zxeIg4d1MzX0x8yl2r4AxVsjLxubBhvu-iZI7AJkKUSQICA2wBw"
+      },
+      "defaultHeaders": {},
+      "timeout": 10000,
+      "retry": {
+        "maxRetries": 3,
+        "initialDelayMs": 500,
+        "backoffMultiplier": 2
+      },
+      "id": "e4bd5308-5871-46f8-91a7-9898e3548023"
     }
   ],
   "routes": [
