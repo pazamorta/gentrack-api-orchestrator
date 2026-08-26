@@ -613,13 +613,17 @@ async function executeBackendCall(
         if (data) console.log(`[orchestrator]   Outbound Body:`, JSON.stringify(data).slice(0, 1000));
       }
 
-      // Capture request details for step results
+      // Capture request details for step results (safe copy to avoid circular refs)
+      let safeBody: unknown = undefined;
+      if (data !== undefined) {
+        try { safeBody = JSON.parse(JSON.stringify(data)); } catch { safeBody = '[Unable to serialize]'; }
+      }
       lastRequestInfo = {
         method: call.method,
         url,
-        headers,
-        params,
-        body: data,
+        headers: { ...headers },
+        params: params ? { ...params } : undefined,
+        body: safeBody,
       };
 
       const config: AxiosRequestConfig = {
