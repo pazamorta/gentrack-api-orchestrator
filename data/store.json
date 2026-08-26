@@ -362,7 +362,7 @@
               "stepId": "nextPayment",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/paymentSchedulePeriods",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
               "queryMapping": {},
               "bodyMapping": {}
             },
