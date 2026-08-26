@@ -475,6 +475,140 @@ Join multiple values:
 }
 ```
 
+## $coalesce (First Non-Null Value)
+
+Try multiple expressions and return the first non-null value. Useful when a field might exist at different paths or have fallback values:
+
+```json
+"amount": {
+  "$coalesce": ["$.creditAmount", "$.debitAmount"]
+}
+```
+
+Within a `$pick`, the expressions are resolved relative to the current item:
+
+```json
+"$pick": {
+  "amount": {
+    "$coalesce": ["$.creditAmount", "$.debitAmount"]
+  }
+}
+```
+
+If `$.creditAmount` is null/undefined, falls back to `$.debitAmount`. If all expressions resolve to null, the value is `undefined`.
+
+Also works in nested `$source/$pick` and `$expand` contexts with `$item.` and `$.` references.
+
+## $derive (Rule-Based Value Derivation)
+
+Derive a value based on multiple conditions evaluated in order (first match wins). Each rule has conditions with AND logic — all conditions in a rule must be true.
+
+```json
+"contractState": {
+  "$derive": [
+    {
+      "conditions": [
+        { "field": "cancelled", "operator": "eq", "value": true }
+      ],
+      "result": "Cancelled"
+    },
+    {
+      "conditions": [
+        { "field": "cancelled", "operator": "not-exists" },
+        { "field": "toDt", "operator": "in-past" }
+      ],
+      "result": "Expired"
+    },
+    {
+      "conditions": [
+        { "field": "cancelled", "operator": "not-exists" },
+        { "field": "fromDt", "operator": "in-future" }
+      ],
+      "result": "Future"
+    },
+    {
+      "conditions": [
+        { "field": "cancelled", "operator": "not-exists" },
+        { "field": "toDt", "operator": "not-exists" },
+        { "field": "fromDt", "operator": "in-past" }
+      ],
+      "result": "Current"
+    }
+  ],
+  "$default": "Unknown"
+}
+```
+
+### Condition Operators for $derive
+
+| Operator      | Description                             |
+|---------------|-----------------------------------------|
+| `eq`          | Field equals value                      |
+| `neq`         | Field does not equal value              |
+| `gt` / `lt`   | Greater than / less than               |
+| `gte` / `lte` | Greater or equal / less or equal       |
+| `exists`      | Field is not null/undefined             |
+| `not-exists`  | Field is null/undefined                 |
+| `in-past`     | Date field is before today              |
+| `in-future`   | Date field is after today               |
+
+### Result Values
+
+The `result` in each rule can be:
+- A literal string or number
+- An expression (`$steps.step-1.body.field`)
+- An array of expressions (resolved and returned as array)
+
+`$default` is returned when no rule matches.
+
+## $keyOf (Object Key Name)
+
+Return the first key name of an object at a given path. Useful when the backend returns data keyed by a dynamic name (like fuel type):
+
+```json
+"$pick": {
+  "serviceType": "$keyOf:$parent"
+}
+```
+
+- `$keyOf:$` — Returns the first key of the current item
+- `$keyOf:$parent` — Returns the first key of the parent item
+- `$keyOf:$.path.to.object` — Returns the first key of the object at the given JSONPath
+
+This is particularly useful in nested `$source/$pick` where the parent object's key is the data you need (e.g., `"electricity": {...}` where the key "electricity" is the service type).
+
+## $expand (Array Flattening in Nested $pick)
+
+Flatten a nested array within a `$source/$pick` to produce one output row per expanded item. Works in third-level nested contexts.
+
+```json
+"chargeItems": {
+  "$source": "$parent.*.*.products",
+  "$expand": "$.rates",
+  "$pick": {
+    "chargeCode": "$item.name",
+    "description": "$.name",
+    "chargeType": "$item.productItemClass",
+    "rate": {
+      "$coalesce": ["$.rate", "$item.rate"]
+    },
+    "unitOfBilling": "$item.metricUnit"
+  }
+}
+```
+
+### How $expand Works
+
+1. The `$source` array is resolved normally
+2. For each source item, the `$expand` expression is evaluated to find a nested array
+3. Each element in the expanded array produces one output row
+4. In the `$pick`:
+   - `$.field` — resolves against the expanded item (the rate)
+   - `$item.field` — resolves against the source item (the product)
+   - `$parent.field` — resolves against the parent context
+
+If the expand expression doesn't resolve to an array (or is empty), the source item itself is used as both the source and expanded item (producing one row).
+
 ## Conditional Status Code
 
 Return different status codes based on backend response:
@@ -674,6 +808,43 @@ This enables conditional response shapes without custom code — useful for rout
   }
 }
 ```
+
+## Special $pick Variables
+
+Within a `$source/$pick` block, these special expressions are available:
+
+| Expression    | Returns                                                    |
+|---------------|------------------------------------------------------------|
+| `$key`        | The object key name when iterating over an object (not array) |
+| `$parentKey`  | The parent item's key (in nested `$source/$pick`)          |
+| `$index`      | The current iteration index (0-based)                      |
+| `$item.field` | Current forEach source item field                          |
+| `$parent.field` | Parent item field (in nested `$source/$pick`)            |
+
+### $key Example
+
+When the source is an object (not an array), `$key` returns the property name:
+
+```json
+"$source": "$steps.step-1.body.fuelTypes",
+"$pick": {
+  "fuelType": "$key",
+  "details": "$.description"
+}
+```
+
+If `fuelTypes` is `{"Gas": {"description": "..."}, "Electricity": {"description": "..."}}`, the result includes `"fuelType": "Gas"` etc.
+
+### $index Example
+
+```json
+"$pick": {
+  "position": "$index",
+  "name": "$.name"
+}
+```
+
+Returns the zero-based position of each item in the source array.
 
 ## Expression Resolution Summary
 

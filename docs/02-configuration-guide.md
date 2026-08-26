@@ -234,6 +234,57 @@ Execute calls only if a condition is met.
 }
 ```
 
+### Database
+
+Execute a SQL query against a configured database connection. No backend API call is made.
+
+```json
+{
+  "type": "database",
+  "database": {
+    "stepId": "get-data",
+    "connectionId": "db-uuid",
+    "query": "SELECT * FROM accounts WHERE accountNumber = :accountNumber",
+    "params": {
+      "accountNumber": "$.inboundRequest.params.globalID"
+    },
+    "singleRow": false
+  }
+}
+```
+
+### Procedure
+
+Execute a stored procedure against a configured database connection.
+
+```json
+{
+  "type": "procedure",
+  "database": {
+    "stepId": "run-proc",
+    "connectionId": "db-uuid",
+    "procedure": "dbo.GetAccountDetails",
+    "params": {
+      "accountId": "$.inboundRequest.params.id"
+    },
+    "singleRow": true
+  }
+}
+```
+
+#### Database Step Fields
+
+| Field          | Type    | Description                                           |
+|----------------|---------|-------------------------------------------------------|
+| `stepId`       | string  | Unique ID for referencing results                     |
+| `connectionId` | string  | Which database connection to use                      |
+| `query`        | string  | SQL query with `:paramName` placeholders              |
+| `procedure`    | string  | Stored procedure name (mutually exclusive with query) |
+| `params`       | object  | Parameters resolved from context                      |
+| `singleRow`    | boolean | If true, returns first row instead of array           |
+
+Parameters use `:paramName` syntax which is automatically converted to the driver-specific format (`$1` for PostgreSQL, `?` for MySQL, `@paramName` for MSSQL).
+
 ## Call Configuration
 
 Each call within a step:
@@ -496,3 +547,100 @@ Requests that don't match any route or mock are logged with:
 - 404 status code
 
 This provides visibility into misconfigured paths or unexpected traffic.
+
+## Audit Trail
+
+All configuration changes are tracked in an audit log.
+
+### What's Recorded
+
+Every create, update, and delete action on:
+- Backends
+- Routes
+- Databases
+- Mocks
+
+Each entry stores:
+- Timestamp
+- Entity type and name
+- Action (create, update, delete)
+- Previous configuration (for updates/deletes)
+- New configuration (for creates/updates)
+
+### Filtering
+
+Filter audit entries by entity type via the API:
+
+```
+GET /admin/audit?entityType=route&limit=100
+```
+
+### Rollback
+
+Restore any entity to its previous version:
+
+```
+POST /admin/audit/:id/rollback
+```
+
+This restores the `previousConfig` from the audit entry and creates a new audit entry recording the rollback. Only entries with a `previousConfig` can be rolled back (create actions cannot).
+
+### Clearing Audit
+
+```
+DELETE /admin/audit
+```
+
+Retains the **latest entry per entity** so that rollback remains available even after clearing history.
+
+## Export / Import
+
+### Export
+
+Download the full configuration (backends, routes, databases, mocks) as JSON:
+
+```
+GET /admin/export
+```
+
+Returns a file named `orchestrator-config-YYYY-MM-DD.json`.
+
+### Import
+
+Upload a configuration file to restore or merge:
+
+```
+POST /admin/import
+Content-Type: application/json
+
+{
+  "backends": [...],
+  "routes": [...],
+  "databases": [...],
+  "mocks": [...],
+  "mode": "merge"
+}
+```
+
+#### Import Modes
+
+| Mode      | Behaviour                                                    |
+|-----------|--------------------------------------------------------------|
+| `merge`   | Add new items and update existing (by ID). Does not delete.  |
+| `replace` | Clear all existing data first, then import everything.       |
+
+The UI prompts to choose between replace and merge when importing.
+
+## Test Panel
+
+The built-in test panel allows sending HTTP requests directly from the dashboard:
+
+- **Method**: GET, POST, PUT, DELETE
+- **Path**: Any path (e.g., `/api/v1/accounts/123` or `/mock/v1/accounts/123`)
+- **Headers**: JSON object of custom headers
+- **Body**: Raw request body (for POST/PUT)
+
+Responses display with:
+- Colour-coded status badge (green for 2xx, amber for 4xx, red for 5xx)
+- Auto-formatted JSON body
+- Useful for testing routes without external tools like Postman

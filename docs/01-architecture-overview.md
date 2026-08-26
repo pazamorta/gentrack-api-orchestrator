@@ -110,7 +110,27 @@ JSON file-based persistence:
 - `data/logs.json` — Execution logs, audit trail
 - Log retention: configurable via `LOG_RETENTION` env var (default 5000 entries)
 
-### 9. Retry Logic (`src/retry.ts`)
+### 9. Audit Trail (`src/db.ts`)
+
+Tracks all configuration changes:
+
+- Every create, update, and delete to backends, routes, databases, and mocks is recorded
+- Stores previous and new configuration for diff/rollback
+- Rollback API restores the previous version and creates a new audit entry
+- Clear operation retains the latest entry per entity (ensures rollback is always available)
+
+### 10. Database Engine (`src/database.ts`)
+
+Direct database query execution for routes that bypass REST backends:
+
+- Supports MSSQL, PostgreSQL, and MySQL
+- Connection pooling per database (10 max connections)
+- Parameterised queries with `:paramName` syntax (auto-converted per driver)
+- Stored procedure execution
+- Parameters resolved from orchestration context (inbound request, previous steps)
+- `singleRow` option to return first row instead of array
+
+### 11. Retry Logic (`src/retry.ts`)
 
 Configurable retry with exponential backoff:
 
@@ -123,7 +143,7 @@ Configurable retry with exponential backoff:
 - When all retries are exhausted, the actual backend response (real status code and body) is returned, not a generic 500
 - Default: max 3 retries, 500ms initial delay, 2x backoff multiplier
 
-### 10. Authentication (`src/auth.ts`)
+### 12. Authentication (`src/auth.ts`)
 
 Resolves auth headers for outbound calls:
 
@@ -132,7 +152,7 @@ Resolves auth headers for outbound calls:
 - Basic auth
 - Custom header injection
 
-### 11. Rate Limiting (`src/rate-limiter.ts`)
+### 13. Rate Limiting (`src/rate-limiter.ts`)
 
 Per-window request limiting on the `/api` proxy endpoint:
 
@@ -188,6 +208,8 @@ Per-window request limiting on the `/api` proxy endpoint:
 | `parallel`    | Execute all calls simultaneously                       |
 | `forEach`     | Iterate over an array, execute calls per item          |
 | `conditional` | Execute calls only if a condition is met               |
+| `database`    | Execute a SQL query against a configured database      |
+| `procedure`   | Execute a stored procedure against a configured database |
 
 ### forEach Filtering
 
@@ -246,11 +268,14 @@ The dashboard provides:
 
 | Tab          | Features                                                    |
 |--------------|-------------------------------------------------------------|
-| Routes       | CRUD management of orchestration routes                     |
 | Backends     | Manage downstream API connections                           |
+| Routes       | CRUD management of orchestration routes; shows backend names per route |
+| Databases    | Manage database connections (MSSQL, PostgreSQL, MySQL)      |
 | Mocks        | Configure mock responses (shows full path with v1 prefix)   |
 | Logs         | Execution logs with pagination (50/page), route filter, backend/overhead columns |
+| Audit        | Change history with rollback, entity type filter            |
 | Performance  | Time-series charts, route stats table, per-step breakdown   |
+| Test         | Built-in HTTP request tester for API endpoints              |
 | Docs         | Searchable markdown documentation viewer                    |
 
 ### Performance Tab
@@ -265,6 +290,36 @@ The dashboard provides:
 - **CSV Export** — two options:
   - Export Summary: one row per route with all stats
   - Export Detail: per-route + per-step breakdown with success/failure/overhead
+
+### Audit Trail
+
+Full change history for all entities (backends, routes, databases, mocks):
+
+- Records every create, update, and delete action
+- Stores both previous and new configuration for each change
+- Filter by entity type (backend, route, database, mock)
+- **Rollback** — restore any entity to its previous version with one click
+- Clear audit retains the latest change per entity (so rollback always works)
+
+### Test Panel
+
+Built-in HTTP request tester:
+
+- Select method (GET, POST, PUT, DELETE)
+- Enter path (e.g., `/api/v1/accounts/123`)
+- Custom headers (JSON format)
+- Request body for POST/PUT
+- Displays response status code with colour coding and response body (auto-formatted JSON)
+- Useful for testing routes without leaving the dashboard
+
+### Routes List
+
+Route cards display:
+- HTTP method badge and path
+- Route name
+- Step count
+- **Backend names** — resolved from configured backends and database connections (shows raw ID if backend not found)
+- Description preview
 
 ### Execution Logs
 
