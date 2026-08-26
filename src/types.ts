@@ -76,10 +76,12 @@ export interface BackendCall {
   bodyMapping?: Record<string, string>;
   /** Query parameter mappings */
   queryMapping?: Record<string, string>;
+  /** Forward all inbound query params to the backend */
+  forwardQuery?: boolean;
   /** Static body to send (used if bodyMapping is not set) */
   staticBody?: unknown;
-  /** Template body — supports $source/$pick for building arrays in request body */
-  bodyTemplate?: Record<string, unknown>;
+  /** Template body — string expression for pass-through (e.g., "$.inboundRequest.body") or object with $source/$pick for building arrays */
+  bodyTemplate?: string | Record<string, unknown>;
   /** Override retry policy for this specific call */
   retry?: RetryConfig;
   /** Response type: 'json' (default) or 'arraybuffer' for binary responses */

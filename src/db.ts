@@ -2,6 +2,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from './types';
 
+/** JSON.stringify that handles circular references by replacing them with "[Circular]" */
+function safeStringify(obj: unknown): string {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (_key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) return '[Circular]';
+      seen.add(value);
+    }
+    return value;
+  });
+}
+
 const DB_DIR = path.resolve(process.cwd(), 'data');
 const DB_PATH = path.join(DB_DIR, 'store.json');
 const LOGS_PATH = path.join(DB_DIR, 'logs.json');
@@ -207,8 +219,8 @@ export function logExecution(entry: {
     inbound_body: entry.inboundBody ? JSON.stringify(entry.inboundBody).slice(0, 2000) : undefined,
     status_code: entry.statusCode,
     duration_ms: entry.durationMs,
-    step_results: JSON.stringify(entry.stepResults),
-    response_body: entry.responseBody ? JSON.stringify(entry.responseBody).slice(0, 2000) : undefined,
+    step_results: safeStringify(entry.stepResults),
+    response_body: entry.responseBody ? safeStringify(entry.responseBody).slice(0, 2000) : undefined,
     error: entry.error || null,
     created_at: new Date().toISOString(),
   });

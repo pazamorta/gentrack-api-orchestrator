@@ -498,8 +498,20 @@ async function executeBackendCall(
 
       // Build query params
       let params: Record<string, string> | undefined;
+      if (call.forwardQuery) {
+        // Forward all inbound query params as-is
+        const inboundQuery = context.inboundRequest.query;
+        if (inboundQuery && typeof inboundQuery === 'object') {
+          params = {};
+          for (const [key, value] of Object.entries(inboundQuery)) {
+            if (value !== undefined) {
+              params[key] = String(value);
+            }
+          }
+        }
+      }
       if (call.queryMapping) {
-        params = {};
+        if (!params) params = {};
         for (const [key, expr] of Object.entries(call.queryMapping)) {
           const value = resolveValue(expr, context);
           if (value !== undefined) {
@@ -510,9 +522,14 @@ async function executeBackendCall(
 
       // Build request body
       let data: unknown = undefined;
-      if (call.bodyTemplate && Object.keys(call.bodyTemplate).length > 0) {
-        // Use bodyTemplate — supports $source/$pick for building arrays
-        data = applyMapping(call.bodyTemplate as Record<string, unknown>, context);
+      if (call.bodyTemplate) {
+        if (typeof call.bodyTemplate === 'string') {
+          // String expression — resolve directly (e.g., "$.inboundRequest.body")
+          data = resolveValue(call.bodyTemplate, context);
+        } else if (Object.keys(call.bodyTemplate).length > 0) {
+          // Object template — supports $source/$pick for building arrays
+          data = applyMapping(call.bodyTemplate as Record<string, unknown>, context);
+        }
       } else if (call.bodyMapping && Object.keys(call.bodyMapping).length > 0) {
         data = applyMapping(call.bodyMapping, context);
       } else if (call.staticBody !== undefined) {

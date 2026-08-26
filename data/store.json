@@ -69,7 +69,7 @@
       "baseUrl": "https://demo.api.product-builder.demo.gentrack.cloud/",
       "auth": {
         "type": "bearer",
-        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ii1LWWY1RlV6VDRKRjRQU19FRjNuRyJ9.eyJpc3MiOiJodHRwczovL2lkZW50aXR5LmRlbW8uZ2VudHJhY2suY2xvdWQvIiwic3ViIjoid2FhZHxJUUlzc2R4Q3lSZDlBT3ltYzl6LU5GcC1sUThDeTJWdm5zcXRQX1RGa3o4IiwiYXVkIjpbIkRFTU8tYjd4UlNFeXF1Z2pnT0RqMWtnT2lMIiwiaHR0cHM6Ly9nZW50cmFjay1kZW1vLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3ODc2NDkwMDEsImV4cCI6MTc4NzczNTQwMSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6ImFsSklDb0sxOGF2bGZSSlJIdVl6dFJSR2pzU3VJSXBvIn0.jBMuFx6NC9ROWcCaXM5KPnOLgUVgWkf3Hq2JQ6IDNfLeHetv8KauKvHeeOsNKCHHyAC1gZXtH0HRjAsOm-o5BObBUExKhM_Swqg8MO-RCK0TwQTAq7T0gPFLw1uxZazsexpXIqfILj984W_CRe-C0T9vEt-aggGyLpcK4ZYmbueTgmt0xJoCFJzivfZ_tB7ulTagjTePDSaTTtbfcGxR2f7WIQoBiVb8QX-ynbqmgHiNfikUIlXbhcV9jSBa9oCSbU4sbNvkga9MJ37q8KUcq_d3buJ1dV3Mlt4zxeIg4d1MzX0x8yl2r4AxVsjLxubBhvu-iZI7AJkKUSQICA2wBw"
+        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ii1LWWY1RlV6VDRKRjRQU19FRjNuRyJ9.eyJpc3MiOiJodHRwczovL2lkZW50aXR5LmRlbW8uZ2VudHJhY2suY2xvdWQvIiwic3ViIjoid2FhZHxJUUlzc2R4Q3lSZDlBT3ltYzl6LU5GcC1sUThDeTJWdm5zcXRQX1RGa3o4IiwiYXVkIjpbIkRFTU8tYjd4UlNFeXF1Z2pnT0RqMWtnT2lMIiwiaHR0cHM6Ly9nZW50cmFjay1kZW1vLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3ODc3MzUzODcsImV4cCI6MTc4NzgyMTc4Nywic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6ImFsSklDb0sxOGF2bGZSSlJIdVl6dFJSR2pzU3VJSXBvIn0.MotE86t4LIfTxFLByIxR4ZLxj19KQL3_t5Uu7y4ZM51m-oOvpUVRTsAnQyG6UD2gCukIQl78o8HLGn8vtnnnTnK2Q0ODZwTbcsL13o31jT3JRPpW6KLXmYfJsiLsdvz4t-IgJTeGu_pluRXbuGUyHAWZVnynVAFwE2lRAeNam8_4gEv8j3X4V6Xt79HVWtP9_ixdu3x9E5kJCReY-EBjS8xkzcvf0bxEhCGoEmix9Xl-KjS1jx-2GlOGa2Si9-CxEz-mmQ36j8uLPSpXniSVF1oojG_k4re5yobK1fAnn7tgS-01xQHQOmu3lQZykIlngMUje1j4yKQPU-LwQ3FSOA"
       },
       "defaultHeaders": {},
       "timeout": 10000,
@@ -2915,6 +2915,32 @@
               "backendId": "e4bd5308-5871-46f8-91a7-9898e3548023",
               "method": "GET",
               "path": "/eligibility"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "rawPassthrough": "$steps.step-1"
+      }
+    },
+    {
+      "id": "62d905bf-79e8-4483-966b-a8e1aec5c604",
+      "name": "List Offers",
+      "method": "POST",
+      "path": "v1/offers/list",
+      "description": "Describe what this route does",
+      "logLevel": "error",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "e4bd5308-5871-46f8-91a7-9898e3548023",
+              "method": "POST",
+              "path": "/offers/list",
+              "bodyTemplate": "$.inboundRequest.body",
+              "forwardQuery": true
             }
           ]
         }
