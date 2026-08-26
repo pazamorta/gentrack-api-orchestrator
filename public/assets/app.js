@@ -258,26 +258,28 @@ async function loadRoutes() {
 }
 
 function getRouteBackendNames(route) {
-  const backendIds = new Set();
+  const names = new Set();
   (route.steps || []).forEach((step) => {
     (step.calls || []).forEach((call) => {
-      if (call.backendId) backendIds.add(call.backendId);
+      if (call.backendId) {
+        const b = backends.find((b) => b.id === call.backendId);
+        names.add(b ? b.name : call.backendId);
+      }
     });
     if (step.fallbackCalls) {
       step.fallbackCalls.forEach((call) => {
-        if (call.backendId) backendIds.add(call.backendId);
+        if (call.backendId) {
+          const b = backends.find((b) => b.id === call.backendId);
+          names.add(b ? b.name : call.backendId);
+        }
       });
     }
     if (step.database && step.database.connectionId) {
       const db = databases.find((d) => d.id === step.database.connectionId);
-      backendIds.add(db ? db.name : step.database.connectionId);
-      return;
+      names.add(db ? db.name : step.database.connectionId);
     }
   });
-  return [...backendIds].map((id) => {
-    const b = backends.find((b) => b.id === id);
-    return b ? b.name : id;
-  });
+  return [...names];
 }
 
 function renderRoutes() {
