@@ -462,14 +462,8 @@ async function executeBackendCall(
 
   const retryResult = await withRetry(
     async () => {
-      // Resolve auth headers (re-resolved on each attempt for token refresh)
-      const authHeaders = await resolveAuthHeaders(backend.auth);
-
-      // Resolve the URL path
+      // Resolve the URL path first (so we can capture it for logging even if auth fails)
       const resolvedPath = resolvePath(call.path, context);
-      // Support absolute URLs — if the resolved path is an absolute URL:
-      // - If it matches the backend host, use it directly
-      // - If it doesn't match, extract just the path portion and use with backend baseUrl
       let url: string;
       if (resolvedPath.startsWith('http://') || resolvedPath.startsWith('https://')) {
         try {
@@ -492,6 +486,19 @@ async function executeBackendCall(
       }
 
       const logLvl = context.logLevel || 'error';
+
+      // Capture basic request info early (before auth which might throw)
+      lastRequestInfo = {
+        method: call.method,
+        url,
+        headers: {},
+        params: undefined,
+        body: undefined,
+      };
+
+      // Resolve auth headers (re-resolved on each attempt for token refresh)
+      const authHeaders = await resolveAuthHeaders(backend.auth);
+
       if (logLvl === 'info' || logLvl === 'debug') {
         console.log(`[orchestrator] ${call.method} ${url}`);
       }
@@ -744,7 +751,7 @@ async function executeBackendCall(
 
     return {
       statusCode: response.status,
-      headers: response.headers as Record<string, string>,
+      headers: Object.fromEntries(Object.entries(response.headers || {})) as Record<string, string>,
       body,
       duration: lastBackendDuration,
       request: lastRequestInfo,

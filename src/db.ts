@@ -4,14 +4,49 @@ import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from './t
 
 /** JSON.stringify that handles circular references by replacing them with "[Circular]" */
 function safeStringify(obj: unknown): string {
-  const seen = new WeakSet();
-  return JSON.stringify(obj, (_key, value) => {
-    if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) return '[Circular]';
-      seen.add(value);
+  try {
+    return JSON.stringify(obj);
+  } catch {
+    // Only use circular-safe version if normal stringify fails
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (_key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) return '[Circular]';
+        seen.add(value);
+      }
+      return value;
+    });
+  }
+}
+
+/** Deep-clone step results into plain objects to avoid serialization issues with axios internals */
+function sanitizeStepResults(stepResults: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(stepResults)) {
+    if (value === null || value === undefined || typeof value !== 'object') {
+      clean[key] = value;
+      continue;
     }
-    return value;
-  });
+    const step = value as Record<string, unknown>;
+    const sanitized: Record<string, unknown> = {
+      statusCode: step.statusCode,
+      headers: step.headers ? { ...(step.headers as object) } : {},
+      body: step.body,
+      duration: step.duration,
+    };
+    if ('request' in step && step['request'] != null && typeof step['request'] === 'object') {
+      const req = step['request'] as Record<string, unknown>;
+      sanitized.request = {
+        method: req.method,
+        url: req.url,
+        headers: req.headers ? { ...(req.headers as object) } : undefined,
+        params: req.params,
+        body: req.body,
+      };
+    }
+    clean[key] = sanitized;
+  }
+  return clean;
 }
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
@@ -219,7 +254,7 @@ export function logExecution(entry: {
     inbound_body: entry.inboundBody ? JSON.stringify(entry.inboundBody).slice(0, 2000) : undefined,
     status_code: entry.statusCode,
     duration_ms: entry.durationMs,
-    step_results: safeStringify(entry.stepResults),
+    step_results: safeStringify(sanitizeStepResults(entry.stepResults)),
     response_body: entry.responseBody ? safeStringify(entry.responseBody).slice(0, 2000) : undefined,
     error: entry.error || null,
     created_at: new Date().toISOString(),
