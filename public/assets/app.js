@@ -257,6 +257,29 @@ async function loadRoutes() {
   }
 }
 
+function getRouteBackendNames(route) {
+  const backendIds = new Set();
+  (route.steps || []).forEach((step) => {
+    (step.calls || []).forEach((call) => {
+      if (call.backendId) backendIds.add(call.backendId);
+    });
+    if (step.fallbackCalls) {
+      step.fallbackCalls.forEach((call) => {
+        if (call.backendId) backendIds.add(call.backendId);
+      });
+    }
+    if (step.database && step.database.connectionId) {
+      const db = databases.find((d) => d.id === step.database.connectionId);
+      backendIds.add(db ? db.name : step.database.connectionId);
+      return;
+    }
+  });
+  return [...backendIds].map((id) => {
+    const b = backends.find((b) => b.id === id);
+    return b ? b.name : id;
+  });
+}
+
 function renderRoutes() {
   const container = document.getElementById('routes-list');
   if (routes.length === 0) {
@@ -264,7 +287,12 @@ function renderRoutes() {
     return;
   }
 
-  container.innerHTML = routes.map((r) => `
+  container.innerHTML = routes.map((r) => {
+    const backendNames = getRouteBackendNames(r);
+    const backendBadges = backendNames.length > 0
+      ? backendNames.map((name) => `<span class="badge badge-auth">${escapeHtml(name)}</span>`).join(' ')
+      : '<span style="color: var(--text-muted); font-size: 0.8rem;">none</span>';
+    return `
     <div class="card" data-id="${r.id}">
       <div class="card-info">
         <h4>
@@ -272,7 +300,7 @@ function renderRoutes() {
           ${escapeHtml(r.path)}
           — ${escapeHtml(r.name)}
         </h4>
-        <p>${r.steps?.length || 0} steps • ${r.description ? escapeHtml(r.description.slice(0, 80)) : 'No description'}</p>
+        <p>${r.steps?.length || 0} steps • ${backendBadges} • ${r.description ? escapeHtml(r.description.slice(0, 80)) : 'No description'}</p>
       </div>
       <div class="card-actions">
         <button class="btn btn-secondary btn-sm" onclick="viewRoute('${r.id}')">View</button>
@@ -280,7 +308,7 @@ function renderRoutes() {
         <button class="btn btn-danger btn-sm" onclick="deleteRoute('${r.id}')">Delete</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function openRouteEditor(id) {
