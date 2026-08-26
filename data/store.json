@@ -43,14 +43,15 @@
       }
     },
     {
+      "id": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
       "name": "Factor",
-      "baseUrl": "https://api.example.com",
+      "baseUrl": "https://api.usefactor.io",
       "auth": {
         "type": "oauth2",
         "oauth2": {
-          "tokenUrl": "https://auth.example.com/oauth/token",
-          "clientId": "your-client-id",
-          "clientSecret": "your-client-secret",
+          "tokenUrl": "https://idp.usefactor.io",
+          "clientId": "3igf40a8os03dodqmpdsl122v7",
+          "clientSecret": "1js95rb558ebbje5ickthu12nqdi0al5hitl9krih0vk6cm28110",
           "scope": ""
         }
       },
@@ -60,8 +61,7 @@
         "maxRetries": 3,
         "initialDelayMs": 500,
         "backoffMultiplier": 2
-      },
-      "id": "f5d8b1a0-addc-452e-8e91-f144b9b882d4"
+      }
     },
     {
       "id": "e4bd5308-5871-46f8-91a7-9898e3548023",
@@ -2947,6 +2947,33 @@
       ],
       "responseMapping": {
         "rawPassthrough": "$steps.step-1"
+      }
+    },
+    {
+      "id": "4de42399-86a7-4d3a-85dd-16b3cbeec04e",
+      "name": "Get Forecasted Costs",
+      "method": "GET",
+      "path": "v1/forecasted-costs/:id",
+      "description": "Describe what this route does",
+      "logLevel": "debug",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
+              "method": "GET",
+              "path": "/forecast/forecastRequests/{{$.inboundRequest.params.id}}"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "result": "$steps.step-1.body"
+        }
       }
     }
   ],
