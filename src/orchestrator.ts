@@ -4,7 +4,7 @@ import * as https from 'https';
 
 // Connection pooling — reuse TCP connections across requests
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50, maxFreeSockets: 10, rejectUnauthorized: false });
 
 // In-memory response cache (TTL-based)
 const responseCache = new Map<string, { data: any; status: number; headers: any; expires: number }>();
