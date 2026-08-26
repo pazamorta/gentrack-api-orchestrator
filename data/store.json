@@ -1382,7 +1382,7 @@
               "stepId": "step-2",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/paymentSchedulePeriods",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
               "headers": {},
               "queryMapping": {},
               "bodyMapping": {}
@@ -1990,7 +1990,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/paymentSchedulePeriods"
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods"
             },
             {
               "stepId": "step-2",
@@ -2199,7 +2199,7 @@
               "stepId": "step-1",
               "backendId": "gtcx-gcis",
               "method": "GET",
-              "path": "/paymentSchedulePeriods",
+              "path": "/accounts/accountNumber/{{$.inboundRequest.params.globalID}}/paymentSchedulePeriods",
               "forwardHeaders": true,
               "headers": {
                 "Host": "api-uk.integration.gentrack.cloud"
