@@ -3004,9 +3004,10 @@
       "id": "df8a6b9d-7812-4940-b549-aca845336d55"
     },
     {
+      "id": "d038491c-eb09-4be2-bd03-660da283ad28",
       "name": "PUT Request New Forecast",
       "method": "PUT",
-      "path": "v1/forecast-costs/request-new-forecast",
+      "path": "v1/forecasted-costs/request-new-forecast",
       "description": "Reqyest a new forecast from factor",
       "logLevel": "error",
       "steps": [
@@ -3028,8 +3029,7 @@
         "body": {
           "result": "$steps.step-1.body"
         }
-      },
-      "id": "d038491c-eb09-4be2-bd03-660da283ad28"
+      }
     }
   ],
   "databases": [
