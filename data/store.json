@@ -45,11 +45,11 @@
     {
       "id": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
       "name": "Factor",
-      "baseUrl": "https://api.usefactor.io",
+      "baseUrl": "https://api.uk.usefactor.io",
       "auth": {
         "type": "oauth2",
         "oauth2": {
-          "tokenUrl": "https://idp.usefactor.io",
+          "tokenUrl": "https://idp.usefactor.io/oauth2/token",
           "clientId": "3igf40a8os03dodqmpdsl122v7",
           "clientSecret": "1js95rb558ebbje5ickthu12nqdi0al5hitl9krih0vk6cm28110",
           "scope": ""
@@ -2975,6 +2975,61 @@
           "result": "$steps.step-1.body"
         }
       }
+    },
+    {
+      "name": "Get Available Cost Types",
+      "method": "GET",
+      "path": "v1/cost-types",
+      "description": "Describe what this route does",
+      "logLevel": "error",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
+              "method": "GET",
+              "path": "/forecast/rateSets"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "result": "$steps.step-1.body"
+        }
+      },
+      "id": "df8a6b9d-7812-4940-b549-aca845336d55"
+    },
+    {
+      "name": "PUT Request New Forecast",
+      "method": "PUT",
+      "path": "v1/forecast-costs/request-new-forecast",
+      "description": "Reqyest a new forecast from factor",
+      "logLevel": "error",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
+              "method": "PUT",
+              "path": "/forecast/forecastRequests/",
+              "bodyTemplate": "$.inboundRequest.body"
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "result": "$steps.step-1.body"
+        }
+      },
+      "id": "d038491c-eb09-4be2-bd03-660da283ad28"
     }
   ],
   "databases": [
