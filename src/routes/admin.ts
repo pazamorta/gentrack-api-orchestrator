@@ -396,6 +396,12 @@ router.get('/mocks/template/:routeId', (req: Request, res: Response) => {
         // Show the bodyTemplate structure as expected input
         if (typeof call.bodyTemplate === 'string') {
           requestBody = { _note: 'Pass-through: send any JSON body' };
+        } else if (Array.isArray(call.bodyTemplate)) {
+          requestBody = call.bodyTemplate.map((item) =>
+            item !== null && typeof item === 'object'
+              ? buildExampleFromTemplate(item as Record<string, unknown>)
+              : item
+          );
         } else {
           requestBody = buildExampleFromTemplate(call.bodyTemplate);
         }

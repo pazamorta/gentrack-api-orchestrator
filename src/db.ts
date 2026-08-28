@@ -117,13 +117,27 @@ export async function initDb(): Promise<void> {
   }
 
   // Load config store
+  let storeLoadOk = true;
   if (fs.existsSync(DB_PATH)) {
     try {
       const raw = fs.readFileSync(DB_PATH, 'utf-8');
       store = JSON.parse(raw);
       if (!store.mocks) store.mocks = [];
-    } catch {
-      store = { backends: [], routes: [], databases: [], mocks: [] };
+    } catch (err) {
+      // Do NOT silently reset — a parse failure here would otherwise be
+      // persisted back to disk and destroy the user's config. Back up the
+      // corrupt file and abort so the existing data is never overwritten.
+      storeLoadOk = false;
+      const backupPath = `${DB_PATH}.corrupt-${Date.now()}.bak`;
+      try {
+        fs.copyFileSync(DB_PATH, backupPath);
+        console.error(`[db] FAILED to parse store.json: ${(err as Error).message}`);
+        console.error(`[db] A backup of the unreadable file was saved to: ${backupPath}`);
+      } catch { /* ignore backup failure */ }
+      throw new Error(
+        `Cannot start: data/store.json is not valid JSON. The file has been left untouched ` +
+        `(backup at ${backupPath}). Fix the JSON and restart.`
+      );
     }
   }
 
@@ -145,13 +159,23 @@ export async function initDb(): Promise<void> {
     }
   }
 
-  persist();
+  // Only write on load if we actually loaded (or are creating) valid data.
+  // Never persist after a failed load — that would overwrite good data.
+  if (storeLoadOk) {
+    persist();
+  }
   persistLogs();
 }
 
-/** Write the config store to disk */
+/**
+ * Write the config store to disk.
+ * Writes to a temp file first, then renames — an atomic swap that prevents a
+ * partially-written (corrupt) store.json if the process is interrupted mid-write.
+ */
 function persist(): void {
-  fs.writeFileSync(DB_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  const tmpPath = `${DB_PATH}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify(store, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, DB_PATH);
 }
 
 /** Write the logs store to disk */

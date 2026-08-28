@@ -3030,6 +3030,84 @@
           "result": "$steps.step-1.body"
         }
       }
+    },
+    {
+      "id": "25b8cf33-a311-4729-bd02-8a1c16c22b40",
+      "name": "Request forecast for product offer",
+      "method": "PUT",
+      "path": "v1/forecasted-costs/product-offer/:productOfferId",
+      "description": "Get a product offer from Product Builder, then request a forecast from Factor for each charge using the charge's distinct costTypes as the rateSetIds",
+      "logLevel": "error",
+      "steps": [
+        {
+          "type": "sequential",
+          "calls": [
+            {
+              "stepId": "step-1",
+              "backendId": "e4bd5308-5871-46f8-91a7-9898e3548023",
+              "method": "POST",
+              "path": "/offers/{{$.inboundRequest.params.productOfferId}}",
+              "bodyTemplate": [
+                {
+                  "key": "DEMOELIGIBILITY",
+                  "value": "YES"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "forEach",
+          "iterateOver": "$steps.step-1.body.charges",
+          "calls": [
+            {
+              "stepId": "step-2",
+              "backendId": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
+              "method": "PUT",
+              "path": "/forecast/forecastRequests/",
+              "bodyTemplate": {
+                "forecastPeriodFrom": "2026-09-01",
+                "forecastPeriodTo": "2027-08-31",
+                "identifier": "$item.name",
+                "market": "UK",
+                "forecastRequestType": "RATED",
+                "batchIdentifier": "",
+                "rateSetIds": {
+                  "$distinct": "$item.chargeElements[*].days[*].times[*].steps[*].rates[*].rates[*].costType"
+                },
+                "chargeContexts": [
+                  {
+                    "marketIdentifier": "UK",
+                    "forecastBasis": "historical_load",
+                    "outputShapingPartition": "sample-day-night",
+                    "cylinderSubmission": {
+                      "type": "fac-dp:EnergyTelemetryInputPortDefinition",
+                      "@id": "https://api.uk.usefactor.io/import/01a047d5-bc92-714a-a5e3-a20cdd747d18"
+                    },
+                    "distributionLossFactor": {
+                      "distributor": "",
+                      "lossFactorCode": ""
+                    },
+                    "transmissionLossFactor": {
+                      "lossFactorCode": ""
+                    },
+                    "siteInformation": {
+                      "siteCapacity": "0"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "responseMapping": {
+        "statusCode": 200,
+        "body": {
+          "productOffer": "$steps.step-1.body",
+          "forecasts": "$steps.step-2.body"
+        }
+      }
     }
   ],
   "databases": [

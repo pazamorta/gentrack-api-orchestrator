@@ -118,6 +118,21 @@ export function applyMapping(
         continue;
       }
 
+      // Check for $distinct — resolve an expression to an array and remove duplicate values
+      if ('$distinct' in obj) {
+        const expr = obj['$distinct'] as string;
+        const resolved = resolveValue(expr, context);
+        const arr = Array.isArray(resolved) ? resolved : (resolved !== undefined && resolved !== null ? [resolved] : []);
+        const seen = new Set<string>();
+        const unique: unknown[] = [];
+        for (const v of arr) {
+          const key = typeof v === 'object' ? JSON.stringify(v) : String(v);
+          if (!seen.has(key)) { seen.add(key); unique.push(v); }
+        }
+        setNestedValue(result, targetKey, unique);
+        continue;
+      }
+
       // Check for $dateAdd directive at mapping level
       if ('$dateAdd' in obj && '$date' in obj) {
         const dateConfig = obj as { $date: string; $dateAdd: { days?: number; months?: number; years?: number }; $format?: string };

@@ -98,10 +98,15 @@ export async function executeOrchestration(
     const stepId = route.responseMapping.rawPassthrough.replace('$steps.', '');
     const stepResult = context.stepResults[stepId];
     if (stepResult) {
+      let body = stepResult.body;
+      // Optionally inject computed fields into matching objects anywhere in the response
+      if (route.responseMapping.computedFields?.length) {
+        body = applyComputedFields(body, route.responseMapping.computedFields);
+      }
       return {
         statusCode: stepResult.statusCode,
         headers: stepResult.headers as Record<string, string>,
-        body: stepResult.body,
+        body,
         raw: true,
         backendWallTime: (context as any).totalBackendWallTime || 0,
       } as any;
@@ -147,6 +152,11 @@ export async function executeOrchestration(
     }
   } else {
     responseBody = buildResponse(route.responseMapping.body, context);
+  }
+
+  // Inject computed fields into matching objects if configured
+  if (route.responseMapping.computedFields?.length) {
+    responseBody = applyComputedFields(responseBody, route.responseMapping.computedFields);
   }
 
   // Strip null/undefined values if configured
@@ -533,6 +543,13 @@ async function executeBackendCall(
         if (typeof call.bodyTemplate === 'string') {
           // String expression — resolve directly (e.g., "$.inboundRequest.body")
           data = resolveValue(call.bodyTemplate, context);
+        } else if (Array.isArray(call.bodyTemplate)) {
+          // Array template — map each element (preserves array shape)
+          data = call.bodyTemplate.map((item) =>
+            item !== null && typeof item === 'object'
+              ? applyMapping(item as Record<string, unknown>, context)
+              : item
+          );
         } else if (Object.keys(call.bodyTemplate).length > 0) {
           // Object template — supports $source/$pick for building arrays
           data = applyMapping(call.bodyTemplate as Record<string, unknown>, context);
@@ -777,6 +794,116 @@ async function executeBackendCall(
     duration: Date.now() - startTime,
     request: lastRequestInfo,
   };
+}
+
+/**
+ * A rule that computes a new field on any object matching a shape, anywhere in the response.
+ * Each rule looks up two operands and applies an arithmetic operator to produce a target field.
+ *
+ * Operands can be:
+ *   - "$.field"                        — a direct field on the matched object
+ *   - "$.arrayField[name=X].value"     — the `value` of an array entry where `name === "X"`
+ *                                        (matchKey defaults to "name", valueKey defaults to "value")
+ *
+ * A rule only applies to an object if BOTH operands resolve to finite numbers.
+ */
+interface ComputedFieldRule {
+  target: string;                 // field name to add (e.g. "costRate")
+  left: string;                   // operand expression
+  right: string;                  // operand expression
+  operator: '+' | '-' | '*' | '/';
+  round?: number;                 // optional decimal places
+}
+
+/**
+ * Resolve a computed-field operand against a single object. Returns null if not resolvable.
+ * Supports a dot-separated path where each segment can be:
+ *   - a plain field:            fieldName
+ *   - an array filter:          arrayField[matchKey=matchVal]   (selects the first matching entry)
+ *   - an array index:           fieldName[0]                    (selects an element by position)
+ * Example: "$.basis[name=TOTAL_VOLUME].value[0]"
+ */
+function resolveComputedOperand(expr: string, obj: Record<string, unknown>): number | null {
+  if (!expr.startsWith('$.')) {
+    const literal = Number(expr);
+    return Number.isFinite(literal) ? literal : null;
+  }
+  const path = expr.slice(2);
+  // Split into segments while keeping bracket contents intact, e.g.
+  // "basis[name=TOTAL_VOLUME].value[0]" -> ["basis[name=TOTAL_VOLUME]", "value[0]"]
+  const segments = path.split('.');
+  let cur: unknown = obj;
+
+  for (const segment of segments) {
+    if (cur === null || cur === undefined) return null;
+
+    // Match "field", "field[key=val]", or "field[0]"
+    const m = segment.match(/^([^[]*)(?:\[([^\]]+)\])?$/);
+    if (!m) return null;
+    const [, field, bracket] = m;
+
+    if (field) {
+      if (typeof cur !== 'object') return null;
+      cur = (cur as Record<string, unknown>)[field];
+    }
+
+    if (bracket !== undefined) {
+      if (bracket.includes('=')) {
+        // Filter form: matchKey=matchVal
+        const eq = bracket.indexOf('=');
+        const matchKey = bracket.slice(0, eq);
+        const matchVal = bracket.slice(eq + 1);
+        if (!Array.isArray(cur)) return null;
+        cur = cur.find(
+          (e) => e && typeof e === 'object' && String((e as Record<string, unknown>)[matchKey]) === matchVal
+        );
+      } else {
+        // Index form
+        const idx = Number(bracket);
+        if (!Array.isArray(cur) || !Number.isInteger(idx)) return null;
+        cur = cur[idx];
+      }
+    }
+  }
+
+  const num = Number(cur);
+  return Number.isFinite(num) ? num : null;
+}
+
+/**
+ * Recursively walk an object/array and apply computed-field rules to every object.
+ * A rule adds its `target` field only when both operands resolve to finite numbers.
+ */
+function applyComputedFields(obj: unknown, rules: ComputedFieldRule[]): unknown {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => applyComputedFields(item, rules));
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const record = obj as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(record)) {
+      result[key] = applyComputedFields(value, rules);
+    }
+    for (const rule of rules) {
+      const left = resolveComputedOperand(rule.left, result);
+      const right = resolveComputedOperand(rule.right, result);
+      if (left === null || right === null) continue;
+      let computed: number | null = null;
+      switch (rule.operator) {
+        case '+': computed = left + right; break;
+        case '-': computed = left - right; break;
+        case '*': computed = left * right; break;
+        case '/': computed = right !== 0 ? left / right : null; break;
+      }
+      if (computed !== null) {
+        result[rule.target] = rule.round !== undefined
+          ? Number(computed.toFixed(rule.round))
+          : computed;
+      }
+    }
+    return result;
+  }
+  return obj;
 }
 
 /**

@@ -80,8 +80,8 @@ export interface BackendCall {
   forwardQuery?: boolean;
   /** Static body to send (used if bodyMapping is not set) */
   staticBody?: unknown;
-  /** Template body — string expression for pass-through (e.g., "$.inboundRequest.body") or object with $source/$pick for building arrays */
-  bodyTemplate?: string | Record<string, unknown>;
+  /** Template body — string expression for pass-through (e.g., "$.inboundRequest.body"), an object, or an array of objects */
+  bodyTemplate?: string | Record<string, unknown> | unknown[];
   /** Override retry policy for this specific call */
   retry?: RetryConfig;
   /** Response type: 'json' (default) or 'arraybuffer' for binary responses */
@@ -173,6 +173,19 @@ export interface ResponseMapping {
   headers?: Record<string, string>;
   /** Pass through a step's raw response (body + content-type) without JSON wrapping */
   rawPassthrough?: string;
+  /**
+   * Add computed fields to any object in the response that matches the operands.
+   * Each rule computes `target = left <operator> right` and is applied recursively
+   * to every object; a rule is skipped for objects where operands don't resolve to numbers.
+   * Operands: "$.field" or "$.arrayField[matchKey=matchVal].valueKey".
+   */
+  computedFields?: {
+    target: string;
+    left: string;
+    right: string;
+    operator: '+' | '-' | '*' | '/';
+    round?: number;
+  }[];
   /** Remove null/undefined values from the response */
   stripNulls?: boolean;
   /** Return body as a top-level array using $source/$pick (body field is ignored when this is set) */
