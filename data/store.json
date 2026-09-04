@@ -69,7 +69,7 @@
       "baseUrl": "https://demo.api.product-builder.demo.gentrack.cloud/",
       "auth": {
         "type": "bearer",
-        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ii1LWWY1RlV6VDRKRjRQU19FRjNuRyJ9.eyJpc3MiOiJodHRwczovL2lkZW50aXR5LmRlbW8uZ2VudHJhY2suY2xvdWQvIiwic3ViIjoid2FhZHxJUUlzc2R4Q3lSZDlBT3ltYzl6LU5GcC1sUThDeTJWdm5zcXRQX1RGa3o4IiwiYXVkIjpbIkRFTU8tYjd4UlNFeXF1Z2pnT0RqMWtnT2lMIiwiaHR0cHM6Ly9nZW50cmFjay1kZW1vLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3ODc5MjM0NDUsImV4cCI6MTc4ODAwOTg0NSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6ImFsSklDb0sxOGF2bGZSSlJIdVl6dFJSR2pzU3VJSXBvIn0.stPVj25S6hv1Br2FUQrrp5rQdu0QdXMD32eowOEvrcFzQd7jMR9KuQTj7Zdgg4LDT2psV9hINd-v5UIuXxF0s4n3wZXQQFq4bESjgU3xNPLt-4Wdrs08ed5w4D4_bhNVmrDJtKhGXw-BY8tQRZyBPAwGES_hNUx52HWMpAXdoHAGBwULh208OfhkDbDP2gjzr93AKmeOhAmEsgiZeuy8i2U1jEjHyuzELCoW3huic8A9m6CufJBR6JM-kEP1gkJrl28ws4aTcvDCc3hsn4c2abYuPkT-w5azMPxoy3PlBL5dlIuRHJ0xu0Eev1l7ET-IzQLEbB4QxwEu4OEDJKrZzQ"
+        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ii1LWWY1RlV6VDRKRjRQU19FRjNuRyJ9.eyJpc3MiOiJodHRwczovL2lkZW50aXR5LmRlbW8uZ2VudHJhY2suY2xvdWQvIiwic3ViIjoid2FhZHxJUUlzc2R4Q3lSZDlBT3ltYzl6LU5GcC1sUThDeTJWdm5zcXRQX1RGa3o4IiwiYXVkIjpbIkRFTU8tYjd4UlNFeXF1Z2pnT0RqMWtnT2lMIiwiaHR0cHM6Ly9nZW50cmFjay1kZW1vLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3ODg1MTkxOTAsImV4cCI6MTc4ODYwNTU5MCwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6ImFsSklDb0sxOGF2bGZSSlJIdVl6dFJSR2pzU3VJSXBvIn0.iD4Wb0ccx2dPCTCSuRvvqMO3jFzlHvZpH-ssOq11jib8bNL4T0qkDzNw8k_CKszAe3MT5SArb_6GWDsnVVOtrSLDpwneeRduh-Z0FflQh--Kp823917HWp36l1AivgB3aBPvyrdndPkf54usxZJ32_VqgBDWDK-M1pAuzcYhTZO8rpMU9xLSLBuZNWjEbMKC8x5Td6frO63Uz3Ris0qMitNcN7gj0V41B-xxadak7Mg0xLzsTf5nd6s8x44HH5yzY_n4V-_DypajoCc4aciwT1cCWZLndLCgpucfR0W7HaDODgWnDYp64SNhrnOQw25UdfoYtatTQp_RZr0jRJ8CMg"
       },
       "defaultHeaders": {},
       "timeout": 10000,
@@ -3107,6 +3107,36 @@
           "productOffer": "$steps.step-1.body",
           "forecasts": "$steps.step-2.body"
         }
+      },
+      "event": {
+        "enabled": true,
+        "targetId": "c738e3d7-d5fd-4d49-9997-5ebb2bc8e592",
+        "forEach": "$steps.step-2.body",
+        "payload": {
+          "productOfferId": "$.inboundRequest.params.productOfferId",
+          "forecastRequestId": "$item.forecastRequestId",
+          "status": "$steps.forecast-status.body.status",
+          "forecast": "$steps.forecast-status.body"
+        },
+        "readiness": {
+          "poll": {
+            "stepId": "forecast-status",
+            "backendId": "f5d8b1a0-addc-452e-8e91-f144b9b882d4",
+            "method": "GET",
+            "path": "/forecast/forecastRequests/{{$item.forecastRequestId}}"
+          },
+          "until": [
+            {
+              "expression": "$steps.forecast-status.body.status",
+              "operator": "eq",
+              "value": "COMPLETED"
+            }
+          ],
+          "intervalSeconds": 10,
+          "timeoutSeconds": 600,
+          "onTimeoutStatus": "TIMED_OUT"
+        },
+        "deliveryTimeoutSeconds": 60
       }
     }
   ],
@@ -11470,6 +11500,18 @@
       "id": "e940430d-2dfc-4d65-a3ea-95b1ad8bdb3b",
       "createdAt": "2026-08-12T09:37:13.489Z",
       "active": true
+    }
+  ],
+  "eventTargets": [
+    {
+      "name": "My Event Target",
+      "type": "webhook",
+      "config": {
+        "url": "https://example.com/webhook",
+        "headers": {},
+        "timeoutMs": 10000
+      },
+      "id": "c738e3d7-d5fd-4d49-9997-5ebb2bc8e592"
     }
   ]
 }

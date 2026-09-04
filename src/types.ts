@@ -211,6 +211,8 @@ export interface RouteConfig {
   logLevel?: 'none' | 'error' | 'info' | 'debug';
   /** When true, 4xx/5xx step results won't short-circuit — response mapping always runs */
   suppressErrorPassthrough?: boolean;
+  /** Optional: publish an event after this route's orchestration completes (async, after response) */
+  event?: RouteEventConfig;
 }
 
 /** Top-level orchestrator configuration (YAML file structure) */
@@ -280,4 +282,146 @@ export interface MockDefinition {
   /** Whether this mock is active */
   active: boolean;
   createdAt: string;
+}
+
+// ============================================================
+// Event publishing
+// ============================================================
+
+/** Broker types an event can be delivered to. webhook + AWS are functional in the PoC; others are placeholders. */
+export type EventTargetType =
+  | 'webhook'
+  | 'sns'
+  | 'sqs'
+  | 'eventbridge'
+  | 'kafka'
+  | 'rabbitmq'
+  | 'azure-servicebus'
+  | 'gcp-pubsub';
+
+/** A configured delivery target (broker connection) for events. */
+export interface EventTarget {
+  id: string;
+  name: string;
+  type: EventTargetType;
+  /** Type-specific settings (e.g. webhook url, SNS topicArn, SQS queueUrl, EventBridge eventBusName, region) */
+  config: Record<string, unknown>;
+}
+
+/** Event lifecycle status. */
+export type EventStatus =
+  | 'PENDING_READINESS'
+  | 'READY'
+  | 'PUBLISHING'
+  | 'DELIVERED'
+  | 'TIMED_OUT'
+  | 'DELIVERY_FAILED';
+
+/** Readiness polling configuration — repeatedly call a backend until conditions pass. */
+export interface EventReadinessConfig {
+  /** A backend call re-executed each interval; its result is merged into $steps.<stepId> */
+  poll: BackendCall;
+  /** Conditions that must ALL be true for the event to become READY */
+  until: Condition[];
+  /** Seconds between poll attempts */
+  intervalSeconds: number;
+  /** Max total polling time before moving to the timeout status */
+  timeoutSeconds: number;
+  /** Status to set when readiness times out (default "TIMED_OUT") */
+  onTimeoutStatus?: string;
+}
+
+/** Route-level event configuration. */
+export interface RouteEventConfig {
+  /** Whether the event trigger is active for this route */
+  enabled: boolean;
+  /** The event target (broker connection) to publish to */
+  targetId: string;
+  /** Payload built with the response-mapping engine (supports $steps.*, $.inboundRequest.*, $source/$pick, etc.) */
+  payload: Record<string, unknown>;
+  /**
+   * Optional fan-out. An expression resolving to an array; when set, ONE event is enqueued
+   * per array item, and that item is exposed as `$item` in the poll path, readiness conditions,
+   * and payload. Use this to trigger a separate event for each element (e.g. each forecast).
+   */
+  forEach?: string;
+  /** Optional readiness polling before the event publishes */
+  readiness?: EventReadinessConfig;
+  /** Seconds after becoming READY within which delivery must succeed, else DELIVERY_FAILED */
+  deliveryTimeoutSeconds?: number;
+}
+
+/** Snapshot of the orchestration context captured when an event is enqueued. */
+export interface EventContextSnapshot {
+  inboundRequest: OrchestrationContext['inboundRequest'];
+  stepResults: Record<string, StepResult>;
+  /** When the event was fanned out from a `forEach`, the array item for this event (exposed as $item) */
+  currentItem?: unknown;
+}
+
+/** A single readiness poll attempt record. */
+export interface EventPollAttempt {
+  at: string;
+  statusCode: number;
+  passed: boolean;
+}
+
+/** Fields required to enqueue a new event (the store assigns id and timestamps). */
+export interface NewEventRecord {
+  executionLogId: number | null;
+  routeId: string;
+  routeName: string;
+  targetId: string;
+  targetType: EventTargetType;
+  status: EventStatus;
+  contextSnapshot: EventContextSnapshot;
+  /** The route's event config, carried so the worker can process without re-reading the route */
+  eventConfig: RouteEventConfig;
+}
+
+/** A persisted event record moving through the lifecycle. */
+export interface EventRecord extends NewEventRecord {
+  id: number;
+  attempts: number;
+  /** Built when the event becomes READY (from payload config + snapshot + merged poll results) */
+  payload: unknown | null;
+  /** Readiness bookkeeping (present when readiness polling is configured) */
+  readiness?: {
+    startedAt: string;
+    pollCount: number;
+    lastPollAt: string | null;
+    pollHistory: EventPollAttempt[];
+  };
+  createdAt: string;
+  readyAt: string | null;
+  deliveredAt: string | null;
+  lastError: string | null;
+  updatedAt: string;
+}
+
+// ============================================================
+// Inbound webhook receiver
+// ============================================================
+
+/** A webhook received by the app's inbound receiver, logged for inspection. */
+export interface ReceivedWebhook {
+  id: number;
+  /** The path segment after /webhooks/ (e.g. "orders/created") */
+  name: string;
+  method: string;
+  path: string;
+  headers: Record<string, string>;
+  query: Record<string, string>;
+  body: unknown;
+  receivedAt: string;
+}
+
+/** Fields required to record a new received webhook (the store assigns id + timestamp). */
+export interface NewReceivedWebhook {
+  name: string;
+  method: string;
+  path: string;
+  headers: Record<string, string>;
+  query: Record<string, string>;
+  body: unknown;
 }

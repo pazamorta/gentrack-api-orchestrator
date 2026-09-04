@@ -12,6 +12,7 @@ The API Orchestrator is a lightweight middleware that sits between frontend cons
 - **Connection pooling** — Reuse TCP connections for faster backend calls
 - **In-memory caching** — TTL-based GET response cache to reduce backend load
 - **Authentication** — Cookie-based login with sliding session expiry
+- **Event publishing** — Asynchronously publish an event to a broker after a route completes, with optional readiness polling (see `04-event-publishing.md`)
 
 ## System Architecture
 
@@ -273,10 +274,14 @@ The dashboard provides:
 | Databases    | Manage database connections (MSSQL, PostgreSQL, MySQL)      |
 | Mocks        | Configure mock responses (shows full path with v1 prefix)   |
 | Logs         | Execution logs with pagination (50/page), route filter, backend/overhead columns |
+| Events       | Event lifecycle: status, attempts, last error; restart & re-publish actions |
+| Event Targets| Manage broker connections (webhook, AWS SNS/SQS/EventBridge, + placeholders) |
 | Audit        | Change history with rollback, entity type filter            |
 | Performance  | Time-series charts, route stats table, per-step breakdown   |
 | Test         | Built-in HTTP request tester for API endpoints              |
 | Docs         | Searchable markdown documentation viewer                    |
+
+See `04-event-publishing.md` for the full event publishing reference.
 
 ### Performance Tab
 

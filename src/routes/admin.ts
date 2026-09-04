@@ -2,8 +2,10 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
-import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from '../types';
+import { BackendApp, DatabaseConnection, EventStatus, EventTarget, MockDefinition, RouteConfig } from '../types';
 import * as db from '../db';
+import { getEventStore } from '../events/event-store';
+import { getReceivedWebhookStore } from '../webhooks/received-store';
 
 const router = Router();
 
@@ -826,6 +828,158 @@ router.get('/docs/:filename', (req: Request, res: Response) => {
 
   const content = fs.readFileSync(filePath, 'utf-8');
   res.json({ filename: req.params.filename, content });
+});
+
+// ============================================================
+// Event Targets Management
+// ============================================================
+
+/** List all event targets */
+router.get('/event-targets', (_req: Request, res: Response) => {
+  res.json({ eventTargets: db.getAllEventTargets() });
+});
+
+/** Get a single event target */
+router.get('/event-targets/:id', (req: Request, res: Response) => {
+  const target = db.getEventTarget(req.params.id);
+  if (!target) {
+    res.status(404).json({ error: 'Event target not found' });
+    return;
+  }
+  res.json(target);
+});
+
+/** Create a new event target (auto-generate ID) */
+router.post('/event-targets', (req: Request, res: Response) => {
+  const target: EventTarget = {
+    ...req.body,
+    id: req.body.id || uuidv4(),
+    config: req.body.config || {},
+  };
+  if (!target.name || !target.type) {
+    res.status(400).json({ error: 'name and type are required' });
+    return;
+  }
+  db.upsertEventTarget(target);
+  res.status(201).json({ message: 'Event target created', eventTarget: target });
+});
+
+/** Create or update an event target */
+router.put('/event-targets/:id', (req: Request, res: Response) => {
+  const target: EventTarget = {
+    ...req.body,
+    id: req.params.id,
+    config: req.body.config || {},
+  };
+  if (!target.name || !target.type) {
+    res.status(400).json({ error: 'name and type are required' });
+    return;
+  }
+  db.upsertEventTarget(target);
+  res.json({ message: 'Event target saved', eventTarget: target });
+});
+
+/** Delete an event target */
+router.delete('/event-targets/:id', (req: Request, res: Response) => {
+  const deleted = db.deleteEventTarget(req.params.id);
+  if (!deleted) {
+    res.status(404).json({ error: 'Event target not found' });
+    return;
+  }
+  res.json({ message: 'Event target deleted' });
+});
+
+// ============================================================
+// Events
+// ============================================================
+
+/** List events, optionally filtered by status and/or routeId */
+router.get('/events', (req: Request, res: Response) => {
+  const status = req.query.status as EventStatus | undefined;
+  const routeId = req.query.routeId as string | undefined;
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
+  const events = getEventStore().list({ status, routeId, limit });
+  res.json({ events });
+});
+
+/** Get a single event with full detail (poll history, payload) */
+router.get('/events/:id', (req: Request, res: Response) => {
+  const event = getEventStore().get(parseInt(req.params.id, 10));
+  if (!event) {
+    res.status(404).json({ error: 'Event not found' });
+    return;
+  }
+  res.json(event);
+});
+
+/** Restart a timed-out event — reset to pending-readiness and resume polling (Req 7) */
+router.post('/events/:id/restart', (req: Request, res: Response) => {
+  const store = getEventStore();
+  const event = store.get(parseInt(req.params.id, 10));
+  if (!event) {
+    res.status(404).json({ error: 'Event not found' });
+    return;
+  }
+  if (event.status !== 'TIMED_OUT') {
+    res.status(400).json({ error: `Only timed-out events can be restarted (current status: ${event.status})` });
+    return;
+  }
+  const nowIso = new Date().toISOString();
+  const updated = store.update(event.id, {
+    status: 'PENDING_READINESS',
+    lastError: null,
+    // Reset the readiness elapsed-time accounting so the timeout window starts again
+    readiness: event.eventConfig.readiness
+      ? { startedAt: nowIso, pollCount: 0, lastPollAt: null, pollHistory: [] }
+      : undefined,
+  });
+  res.json({ message: 'Event restarted', event: updated });
+});
+
+/** Re-publish an event — re-queue for delivery using the stored payload and target (Req 9) */
+router.post('/events/:id/republish', (req: Request, res: Response) => {
+  const store = getEventStore();
+  const event = store.get(parseInt(req.params.id, 10));
+  if (!event) {
+    res.status(404).json({ error: 'Event not found' });
+    return;
+  }
+  if (event.status !== 'DELIVERY_FAILED' && event.status !== 'DELIVERED') {
+    res.status(400).json({ error: `Only failed or delivered events can be re-published (current status: ${event.status})` });
+    return;
+  }
+  const updated = store.update(event.id, {
+    status: 'READY',
+    readyAt: new Date().toISOString(),
+    lastError: null,
+  });
+  res.json({ message: 'Event queued for re-publish', event: updated });
+});
+
+// ============================================================
+// Received Webhooks (inbound)
+// ============================================================
+
+/** List received webhooks (newest first, optional limit) */
+router.get('/received-webhooks', (req: Request, res: Response) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 200;
+  res.json({ webhooks: getReceivedWebhookStore().list(limit) });
+});
+
+/** Get a single received webhook */
+router.get('/received-webhooks/:id', (req: Request, res: Response) => {
+  const wh = getReceivedWebhookStore().get(parseInt(req.params.id, 10));
+  if (!wh) {
+    res.status(404).json({ error: 'Received webhook not found' });
+    return;
+  }
+  res.json(wh);
+});
+
+/** Clear all received webhooks */
+router.delete('/received-webhooks', (_req: Request, res: Response) => {
+  getReceivedWebhookStore().clear();
+  res.json({ message: 'Received webhooks cleared' });
 });
 
 export default router;

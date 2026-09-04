@@ -190,6 +190,19 @@ export async function executeOrchestration(
 }
 
 /**
+ * Execute a single backend call against a context and return its StepResult.
+ * Used by the event worker for readiness polling — reuses all auth/retry/expression
+ * machinery of executeBackendCall without exposing its internals.
+ */
+export async function runPollCall(
+  call: BackendCall,
+  backends: Map<string, BackendApp>,
+  context: OrchestrationContext
+): Promise<StepResult> {
+  return executeBackendCall(call, backends, context);
+}
+
+/**
  * Execute a single orchestration step.
  */
 async function executeStep(
@@ -411,7 +424,7 @@ async function iterateItems(
 /**
  * Evaluate a condition against the orchestration context.
  */
-function evaluateCondition(condition: Condition, context: OrchestrationContext): boolean {
+export function evaluateCondition(condition: Condition, context: OrchestrationContext): boolean {
   const actualValue = resolveValue(condition.expression, context);
 
   switch (condition.operator) {

@@ -9,16 +9,18 @@ let backends = [];
 let routes = [];
 let databases = [];
 let mocks = [];
+let eventTargets = [];
+let eventsStatusFilter = '';
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupModal();
   setupTest();
-  loadBackends();
-  loadRoutes();
-  loadDatabases();
-  loadMocks();
+  // Load backends and databases first so routes can resolve their backend names,
+  // then load routes and mocks (which depend on backends/routes being present).
+  Promise.all([loadBackends(), loadDatabases()])
+    .then(() => Promise.all([loadRoutes(), loadMocks()]));
 
   document.getElementById('add-backend-btn').addEventListener('click', () => {
     document.getElementById('new-backend-panel').classList.remove('hidden');
@@ -68,6 +70,30 @@ document.addEventListener('DOMContentLoaded', () => {
     logsPage = 1;
     loadLogs();
   });
+  // Events
+  document.getElementById('refresh-events-btn').addEventListener('click', loadEvents);
+  document.getElementById('events-status-filter').addEventListener('change', (e) => {
+    eventsStatusFilter = e.target.value;
+    loadEvents();
+  });
+  // Event Targets
+  document.getElementById('add-event-target-btn').addEventListener('click', () => {
+    document.getElementById('new-event-target-panel').classList.remove('hidden');
+  });
+  document.getElementById('new-event-target-cancel').addEventListener('click', () => {
+    document.getElementById('new-event-target-panel').classList.add('hidden');
+  });
+  document.getElementById('new-event-target-create').addEventListener('click', () => {
+    const type = document.getElementById('new-event-target-type').value;
+    document.getElementById('new-event-target-panel').classList.add('hidden');
+    createNewEventTarget(type);
+  });
+  document.getElementById('search-event-targets').addEventListener('input', (e) => {
+    filterCards('event-targets-list', e.target.value);
+  });
+  // Received Webhooks
+  document.getElementById('refresh-received-webhooks-btn').addEventListener('click', loadReceivedWebhooks);
+  document.getElementById('clear-received-webhooks-btn').addEventListener('click', clearReceivedWebhooks);
   document.getElementById('refresh-audit-btn').addEventListener('click', loadAudit);
   document.getElementById('clear-audit-btn').addEventListener('click', clearAudit);
   document.getElementById('audit-filter-type').addEventListener('change', loadAudit);
@@ -97,6 +123,9 @@ function setupTabs() {
 
       // Load data on tab switch
       if (btn.dataset.tab === 'logs') loadLogs();
+      if (btn.dataset.tab === 'events') loadEvents();
+      if (btn.dataset.tab === 'event-targets') loadEventTargets();
+      if (btn.dataset.tab === 'received-webhooks') loadReceivedWebhooks();
       if (btn.dataset.tab === 'audit') loadAudit();
       if (btn.dataset.tab === 'docs') loadDocsIndex();
       if (btn.dataset.tab === 'performance') loadPerformance();
@@ -151,6 +180,8 @@ async function loadBackends() {
     const data = await res.json();
     backends = data.backends || [];
     renderBackends();
+    // Re-render routes so their backend name badges resolve correctly
+    if (routes.length > 0) renderRoutes();
   } catch (err) {
     console.error('Failed to load backends:', err);
   }
@@ -1300,6 +1331,271 @@ window.viewMock = viewMock;
 window.editMock = editMock;
 window.toggleMock = toggleMock;
 window.deleteMock = deleteMock;
+
+// ---- Event Targets ----
+async function loadEventTargets() {
+  try {
+    const res = await fetch(`${API_BASE}/event-targets`);
+    const data = await res.json();
+    eventTargets = data.eventTargets || [];
+    renderEventTargets();
+  } catch (err) {
+    console.error('Failed to load event targets:', err);
+  }
+}
+
+const IMPLEMENTED_TARGET_TYPES = ['webhook', 'sns', 'sqs', 'eventbridge'];
+
+function renderEventTargets() {
+  const container = document.getElementById('event-targets-list');
+  if (eventTargets.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No event targets configured. Click "Add Event Target" to get started.</p>';
+    return;
+  }
+  container.innerHTML = eventTargets.map((t) => {
+    const notImpl = !IMPLEMENTED_TARGET_TYPES.includes(t.type);
+    return `
+    <div class="card" data-id="${t.id}">
+      <div class="card-info">
+        <h4>${escapeHtml(t.name)} <span class="badge badge-auth">${escapeHtml(t.type)}</span>${notImpl ? ' <span class="badge badge-auth" style="color: var(--danger);">not implemented</span>' : ''}</h4>
+        <p>${escapeHtml(JSON.stringify(t.config || {}).slice(0, 100))}</p>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEventTargetEditor('${t.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEventTarget('${t.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const EVENT_TARGET_CONFIG_TEMPLATES = {
+  'webhook': { url: 'https://example.com/webhook', headers: {}, timeoutMs: 10000 },
+  'sns': { topicArn: 'arn:aws:sns:us-east-1:123456789012:my-topic', region: 'us-east-1' },
+  'sqs': { queueUrl: 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue', region: 'us-east-1' },
+  'eventbridge': { eventBusName: 'default', source: 'my.app', detailType: 'OrchestrationCompleted', region: 'us-east-1' },
+  'kafka': { brokers: ['localhost:9092'], topic: 'events' },
+  'rabbitmq': { url: 'amqp://localhost', queue: 'events' },
+  'azure-servicebus': { connectionString: '', queueOrTopic: 'events' },
+  'gcp-pubsub': { projectId: '', topic: 'events' },
+};
+
+function createNewEventTarget(type) {
+  const template = {
+    name: 'My Event Target',
+    type,
+    config: EVENT_TARGET_CONFIG_TEMPLATES[type] || {},
+  };
+  openModal(
+    'New Event Target',
+    JSON.stringify(template, null, 2),
+    async (json) => {
+      const target = JSON.parse(json);
+      await fetch(`${API_BASE}/event-targets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(target),
+      });
+      await loadEventTargets();
+    }
+  );
+}
+
+function openEventTargetEditor(id) {
+  const existing = eventTargets.find((t) => t.id === id);
+  if (!existing) return;
+  openModal(
+    `Edit Event Target: ${existing.name}`,
+    JSON.stringify(existing, null, 2),
+    async (json) => {
+      const target = JSON.parse(json);
+      await fetch(`${API_BASE}/event-targets/${target.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(target),
+      });
+      await loadEventTargets();
+    }
+  );
+}
+
+async function deleteEventTarget(id) {
+  if (!confirm('Delete this event target? Routes referencing it will fail to publish.')) return;
+  await fetch(`${API_BASE}/event-targets/${id}`, { method: 'DELETE' });
+  await loadEventTargets();
+}
+
+// ---- Events ----
+async function loadEvents() {
+  try {
+    const params = new URLSearchParams({ limit: '200' });
+    if (eventsStatusFilter) params.set('status', eventsStatusFilter);
+    const res = await fetch(`${API_BASE}/events?${params}`);
+    const data = await res.json();
+    renderEvents(data.events || []);
+  } catch (err) {
+    console.error('Failed to load events:', err);
+  }
+}
+
+function eventStatusClass(status) {
+  switch (status) {
+    case 'DELIVERED': return '2xx';
+    case 'DELIVERY_FAILED':
+    case 'TIMED_OUT': return '5xx';
+    default: return '4xx';
+  }
+}
+
+function renderEvents(events) {
+  const container = document.getElementById('events-list');
+  if (events.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No events yet. Trigger an event-enabled route to see events here.</p>';
+    return;
+  }
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Route</th>
+          <th>Target</th>
+          <th>Status</th>
+          <th>Attempts</th>
+          <th>Last Error</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${events.map((e) => {
+          const canRestart = e.status === 'TIMED_OUT';
+          const canRepublish = e.status === 'DELIVERY_FAILED' || e.status === 'DELIVERED';
+          return `
+          <tr>
+            <td>${new Date(e.createdAt).toLocaleString()}</td>
+            <td>${escapeHtml(e.routeName || e.routeId)}</td>
+            <td>${escapeHtml(e.targetType || '')}</td>
+            <td><span class="status-badge status-${eventStatusClass(e.status)}">${e.status}</span></td>
+            <td>${e.attempts || 0}</td>
+            <td>${e.lastError ? escapeHtml(String(e.lastError).slice(0, 50)) : '—'}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="viewEvent(${e.id})">View</button>
+              ${canRestart ? `<button class="btn btn-secondary btn-sm" onclick="restartEvent(${e.id})">Restart</button>` : ''}
+              ${canRepublish ? `<button class="btn btn-secondary btn-sm" onclick="republishEvent(${e.id})">Re-publish</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function viewEvent(id) {
+  try {
+    const res = await fetch(`${API_BASE}/events/${id}`);
+    const event = await res.json();
+    openModalReadOnly(`Event #${event.id}: ${event.routeName || event.routeId}`, JSON.stringify(event, null, 2));
+  } catch (err) {
+    alert('Failed to load event: ' + err.message);
+  }
+}
+
+async function restartEvent(id) {
+  if (!confirm('Restart this timed-out event? Readiness polling will resume.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/events/${id}/restart`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error); return; }
+    loadEvents();
+  } catch (err) {
+    alert('Restart failed: ' + err.message);
+  }
+}
+
+async function republishEvent(id) {
+  if (!confirm('Re-publish this event? It will be re-queued for delivery.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/events/${id}/republish`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error); return; }
+    loadEvents();
+  } catch (err) {
+    alert('Re-publish failed: ' + err.message);
+  }
+}
+
+window.openEventTargetEditor = openEventTargetEditor;
+window.deleteEventTarget = deleteEventTarget;
+window.viewEvent = viewEvent;
+window.restartEvent = restartEvent;
+window.republishEvent = republishEvent;
+
+// ---- Received Webhooks ----
+async function loadReceivedWebhooks() {
+  try {
+    const res = await fetch(`${API_BASE}/received-webhooks?limit=200`);
+    const data = await res.json();
+    renderReceivedWebhooks(data.webhooks || []);
+  } catch (err) {
+    console.error('Failed to load received webhooks:', err);
+  }
+}
+
+function renderReceivedWebhooks(webhooks) {
+  const container = document.getElementById('received-webhooks-list');
+  if (webhooks.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-muted); padding: 20px;">No webhooks received yet. Send a POST to /webhooks/&lt;name&gt; to see it here.</p>';
+    return;
+  }
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Name</th>
+          <th>Method</th>
+          <th>Body Preview</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${webhooks.map((w) => {
+          let preview = '';
+          try { preview = JSON.stringify(w.body).slice(0, 60); } catch { preview = String(w.body).slice(0, 60); }
+          return `
+          <tr>
+            <td>${new Date(w.receivedAt).toLocaleString()}</td>
+            <td>${escapeHtml(w.name)}</td>
+            <td>${escapeHtml(w.method)}</td>
+            <td>${escapeHtml(preview)}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="viewReceivedWebhook(${w.id})">View</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function viewReceivedWebhook(id) {
+  try {
+    const res = await fetch(`${API_BASE}/received-webhooks/${id}`);
+    const wh = await res.json();
+    openModalReadOnly(`Received Webhook #${wh.id}: ${wh.name}`, JSON.stringify(wh, null, 2));
+  } catch (err) {
+    alert('Failed to load webhook: ' + err.message);
+  }
+}
+
+async function clearReceivedWebhooks() {
+  if (!confirm('Clear all received webhooks?')) return;
+  try {
+    await fetch(`${API_BASE}/received-webhooks`, { method: 'DELETE' });
+    loadReceivedWebhooks();
+  } catch (err) {
+    alert('Failed to clear: ' + err.message);
+  }
+}
+
+window.viewReceivedWebhook = viewReceivedWebhook;
 
 
 // ---- Performance ----

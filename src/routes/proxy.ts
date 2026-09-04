@@ -3,6 +3,7 @@ import { BackendApp, DatabaseConnection, OrchestrationContext, RouteConfig } fro
 import { executeOrchestration } from '../orchestrator';
 import * as db from '../db';
 import { logExecution } from '../db';
+import { enqueueRouteEvent } from '../events/enqueue';
 
 const router = Router();
 
@@ -95,8 +96,8 @@ router.all('*', async (req: Request, res: Response) => {
 
     const duration = Date.now() - startTime;
 
-    // Log execution
-    logExecution({
+    // Log execution (returns the entry id so a triggered event can link back to it)
+    const executionLogId = logExecution({
       routeId: matchedRoute.id,
       routeName: matchedRoute.name,
       inboundMethod: req.method,
@@ -128,6 +129,19 @@ router.all('*', async (req: Request, res: Response) => {
         console.log(`[proxy]   Response Body:`, JSON.stringify(result.body).slice(0, 1000));
       }
       res.status(result.statusCode).json(result.body);
+    }
+
+    // Trigger an event AFTER the response has been sent (async, non-blocking).
+    // Snapshot the context so the worker can build the payload / run readiness polls.
+    if (matchedRoute.event?.enabled) {
+      enqueueRouteEvent({
+        route: matchedRoute,
+        executionLogId,
+        snapshot: {
+          inboundRequest: context.inboundRequest,
+          stepResults: context.stepResults,
+        },
+      });
     }
   } catch (error: unknown) {
     const duration = Date.now() - startTime;

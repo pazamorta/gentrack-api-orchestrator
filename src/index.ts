@@ -7,6 +7,11 @@ import adminRouter from './routes/admin';
 import proxyRouter from './routes/proxy';
 import mockRouter from './routes/mock';
 import { rateLimitMiddleware } from './rate-limiter';
+import { initEventStore } from './events/event-store';
+import { IntervalEventWorker } from './events/event-worker';
+import { initReceivedWebhookStore } from './webhooks/received-store';
+import webhookReceiverRouter from './routes/webhook-receiver';
+import { BackendApp } from './types';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -106,6 +111,9 @@ app.use('/admin', basicAuth, adminRouter);
 // Mock API — serves mocked responses for testing
 app.use('/mock', mockRouter);
 
+// Inbound webhook receiver — public, log-only
+app.use('/webhooks', webhookReceiverRouter);
+
 // Proxy/orchestration handler — catches all other requests
 app.use('/api', proxyRouter);
 
@@ -161,6 +169,34 @@ async function start(): Promise<void> {
     console.log('[orchestrator] No YAML config found or error loading it — starting with empty config');
   }
 
+  // Initialize the inbound webhook receiver store.
+  initReceivedWebhookStore();
+
+  // Initialize the event store and start the background event worker.
+  const eventStore = initEventStore();
+  const eventWorker = new IntervalEventWorker({
+    store: eventStore,
+    getBackends: () => {
+      const map = new Map<string, BackendApp>();
+      for (const b of db.getAllBackends()) map.set(b.id, b);
+      return map;
+    },
+    getEventTarget: (id: string) => {
+      const t = db.getEventTarget(id);
+      return t ? { id: t.id, name: t.name, type: t.type, config: t.config } : null;
+    },
+    intervalMs: parseInt(process.env.EVENT_WORKER_INTERVAL_MS || '1000', 10),
+  });
+  eventWorker.start();
+
+  // Clean shutdown of the worker.
+  const shutdown = () => {
+    eventWorker.stop();
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[orchestrator] API Orchestrator running on port ${PORT}`);
     console.log(`[orchestrator] Web UI:    http://localhost:${PORT}/ui`);
@@ -168,6 +204,7 @@ async function start(): Promise<void> {
     console.log(`[orchestrator] Proxy API: http://localhost:${PORT}/api`);
     console.log(`[orchestrator] Mock API:  http://localhost:${PORT}/mock`);
     console.log(`[orchestrator] Rate limit: ${RATE_LIMIT_MAX} requests per ${RATE_LIMIT_WINDOW_MS / 1000}s`);
+    console.log(`[orchestrator] Event worker: running`);
   });
 }
 

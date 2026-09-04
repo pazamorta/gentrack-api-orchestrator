@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { BackendApp, DatabaseConnection, MockDefinition, RouteConfig } from './types';
+import { BackendApp, DatabaseConnection, EventTarget, MockDefinition, RouteConfig } from './types';
 
 /** JSON.stringify that handles circular references by replacing them with "[Circular]" */
 function safeStringify(obj: unknown): string {
@@ -58,6 +58,7 @@ interface Store {
   routes: RouteConfig[];
   databases: DatabaseConnection[];
   mocks: MockDefinition[];
+  eventTargets: EventTarget[];
 }
 
 interface LogsStore {
@@ -67,7 +68,7 @@ interface LogsStore {
 
 interface AuditEntry {
   id: number;
-  entityType: 'backend' | 'route' | 'database' | 'mock';
+  entityType: 'backend' | 'route' | 'database' | 'mock' | 'event-target';
   entityId: string;
   entityName: string;
   action: 'create' | 'update' | 'delete';
@@ -98,6 +99,7 @@ let store: Store = {
   routes: [],
   databases: [],
   mocks: [],
+  eventTargets: [],
 };
 
 let logsStore: LogsStore = {
@@ -123,6 +125,7 @@ export async function initDb(): Promise<void> {
       const raw = fs.readFileSync(DB_PATH, 'utf-8');
       store = JSON.parse(raw);
       if (!store.mocks) store.mocks = [];
+      if (!store.eventTargets) store.eventTargets = [];
     } catch (err) {
       // Do NOT silently reset — a parse failure here would otherwise be
       // persisted back to disk and destroy the user's config. Back up the
@@ -266,9 +269,10 @@ export function logExecution(entry: {
   stepResults: Record<string, unknown>;
   responseBody?: unknown;
   error?: string;
-}): void {
+}): number {
+  const id = nextLogId++;
   logsStore.executionLog.push({
-    id: nextLogId++,
+    id,
     route_id: entry.routeId,
     route_name: entry.routeName,
     inbound_method: entry.inboundMethod,
@@ -291,6 +295,7 @@ export function logExecution(entry: {
   }
 
   persistLogs();
+  return id;
 }
 
 export function getExecutionEntry(id: number): ExecutionEntry | null {
@@ -354,10 +359,46 @@ export function deleteDatabase(id: string): boolean {
   return false;
 }
 
+// ---- Event Targets CRUD ----
+
+export function getAllEventTargets(): EventTarget[] {
+  return store.eventTargets || [];
+}
+
+export function getEventTarget(id: string): EventTarget | null {
+  return (store.eventTargets || []).find((t) => t.id === id) || null;
+}
+
+export function upsertEventTarget(target: EventTarget): void {
+  if (!store.eventTargets) store.eventTargets = [];
+  const existing = store.eventTargets.find((t) => t.id === target.id);
+  logAudit('event-target', target.id, target.name, existing ? 'update' : 'create', existing || null, target);
+  const index = store.eventTargets.findIndex((t) => t.id === target.id);
+  if (index >= 0) {
+    store.eventTargets[index] = target;
+  } else {
+    store.eventTargets.push(target);
+  }
+  persist();
+}
+
+export function deleteEventTarget(id: string): boolean {
+  if (!store.eventTargets) return false;
+  const existing = store.eventTargets.find((t) => t.id === id);
+  const before = store.eventTargets.length;
+  store.eventTargets = store.eventTargets.filter((t) => t.id !== id);
+  if (store.eventTargets.length < before) {
+    logAudit('event-target', id, existing?.name || id, 'delete', existing || null, null);
+    persist();
+    return true;
+  }
+  return false;
+}
+
 // ---- Audit Log ----
 
 function logAudit(
-  entityType: 'backend' | 'route' | 'database' | 'mock',
+  entityType: 'backend' | 'route' | 'database' | 'mock' | 'event-target',
   entityId: string,
   entityName: string,
   action: 'create' | 'update' | 'delete',

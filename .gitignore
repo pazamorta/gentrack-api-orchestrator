@@ -1,5 +1,8 @@
 node_modules/
 dist/
 data/logs.json
+data/events.json
+data/received-webhooks.json
+data/*.bak
 *.db
 .env

@@ -27,6 +27,9 @@
         <button class="nav-btn" data-tab="databases">Databases</button>
         <button class="nav-btn" data-tab="mocks">Mocks</button>
         <button class="nav-btn" data-tab="logs">Execution Logs</button>
+        <button class="nav-btn" data-tab="events">Events</button>
+        <button class="nav-btn" data-tab="event-targets">Event Targets</button>
+        <button class="nav-btn" data-tab="received-webhooks">Received Webhooks</button>
         <button class="nav-btn" data-tab="audit">Audit</button>
         <button class="nav-btn" data-tab="performance">Performance</button>
         <button class="nav-btn" data-tab="test">Test</button>
@@ -122,6 +125,64 @@
           </div>
         </div>
         <div id="logs-list" class="table-container"></div>
+      </section>
+
+      <!-- Events Tab -->
+      <section id="tab-events" class="tab-content">
+        <div class="section-header">
+          <h2>Events</h2>
+          <div>
+            <select id="events-status-filter" style="margin-right: 8px;">
+              <option value="">All Statuses</option>
+              <option value="PENDING_READINESS">Pending Readiness</option>
+              <option value="READY">Ready</option>
+              <option value="PUBLISHING">Publishing</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="TIMED_OUT">Timed Out</option>
+              <option value="DELIVERY_FAILED">Delivery Failed</option>
+            </select>
+            <button class="btn btn-secondary" id="refresh-events-btn">Refresh</button>
+          </div>
+        </div>
+        <div id="events-list" class="table-container"></div>
+      </section>
+
+      <!-- Event Targets Tab -->
+      <section id="tab-event-targets" class="tab-content">
+        <div class="section-header">
+          <h2>Event Targets</h2>
+          <button class="btn btn-primary" id="add-event-target-btn">+ Add Event Target</button>
+        </div>
+        <div id="new-event-target-panel" class="new-panel hidden">
+          <label>Target Type:</label>
+          <select id="new-event-target-type">
+            <option value="webhook">Webhook</option>
+            <option value="sns">AWS SNS</option>
+            <option value="sqs">AWS SQS</option>
+            <option value="eventbridge">AWS EventBridge</option>
+            <option value="kafka">Kafka (not implemented)</option>
+            <option value="rabbitmq">RabbitMQ (not implemented)</option>
+            <option value="azure-servicebus">Azure Service Bus (not implemented)</option>
+            <option value="gcp-pubsub">Google Pub/Sub (not implemented)</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="new-event-target-create">Create</button>
+          <button class="btn btn-secondary btn-sm" id="new-event-target-cancel">Cancel</button>
+        </div>
+        <input type="text" class="search-bar" id="search-event-targets" placeholder="Search event targets...">
+        <div id="event-targets-list" class="card-list"></div>
+      </section>
+
+      <!-- Received Webhooks Tab -->
+      <section id="tab-received-webhooks" class="tab-content">
+        <div class="section-header">
+          <h2>Received Webhooks</h2>
+          <div>
+            <button class="btn btn-secondary" id="refresh-received-webhooks-btn">Refresh</button>
+            <button class="btn btn-danger btn-sm" id="clear-received-webhooks-btn">Clear</button>
+          </div>
+        </div>
+        <p style="color: var(--text-muted); margin: 0 0 12px;">Inbound webhooks are received at <code>POST /webhooks/&lt;name&gt;</code> (no auth) and logged here.</p>
+        <div id="received-webhooks-list" class="table-container"></div>
       </section>
 
       <!-- Audit Tab -->
