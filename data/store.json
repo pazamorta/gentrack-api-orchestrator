@@ -11507,7 +11507,7 @@
       "name": "My Event Target",
       "type": "webhook",
       "config": {
-        "url": "https://example.com/webhook",
+        "url": "http://localhost:3000/webhooks/forecast-completed",
         "headers": {},
         "timeoutMs": 10000
       },
